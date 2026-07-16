@@ -8,7 +8,7 @@ import { useAuth } from '../store/AuthContext';
 export default function InterestsSelectScreen() {
   const navigation = useNavigation();
   const { interests, loading, error: loadError } = useInterests();
-  const { updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const [selected, setSelected] = useState(
     Array.isArray(user?.interestIds) ? user.interestIds : []
   );
