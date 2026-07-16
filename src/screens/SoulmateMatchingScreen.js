@@ -4,13 +4,17 @@ import { ActivityIndicator, Animated, Easing, Pressable, StyleSheet, Text, View 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, RADIUS } from '../config';
 import { api } from '../services/api';
+import { getSocket } from '../services/socket';
 import { MatchProvider, useMatch } from '../store/MatchContext';
 
 function SearchingInner() {
   const navigation = useNavigation();
-  const { status, mode, cancel, peer, roomId } = useMatch();
+  const { status, mode, cancel, peer, roomId, startSoulmate } = useMatch();
   const [limit, setLimit] = useState(null);
   const [isPlus, setIsPlus] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [showReSearch, setShowReSearch] = useState(false);
+  const socket = getSocket();
   const spin = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0)).current;
   const orb1 = useRef(new Animated.Value(0)).current;
@@ -20,8 +24,37 @@ function SearchingInner() {
     api.soulmateStatus().then((s) => {
       setIsPlus(!!s.isPlus);
       setLimit(s.remaining);
+      // Auto-start when limit available (or Plus)
+      if ((s.isPlus || s.remaining > 0) && !hasStarted) {
+        const socket = getSocket();
+        if (socket && socket.connected) {
+          startSoulmate();
+          setHasStarted(true);
+        }
+      }
     }).catch(() => {});
-  }, []);
+  }, [hasStarted, startSoulmate]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const onConnect = () => {
+      if (!hasStarted && (isPlus || (limit !== null && limit > 0))) {
+        startSoulmate();
+        setHasStarted(true);
+      }
+    };
+    socket.on('connect', onConnect);
+    return () => socket.off('connect', onConnect);
+  }, [hasStarted, isPlus, limit, startSoulmate]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (status === 'waiting' && hasStarted) {
+        setShowReSearch(true);
+      }
+    }, 20000);
+    return () => clearTimeout(t);
+  }, [status, hasStarted]);
 
   useEffect(() => {
     if (status !== 'matched' || !roomId || !peer) return;
@@ -97,6 +130,20 @@ function SearchingInner() {
             <Pressable style={styles.cancelBtn} onPress={onCancel}>
               <Text style={styles.cancelText}> Aramayı İptal Et </Text>
             </Pressable>
+
+            {showReSearch && (
+              <Pressable style={styles.retryBtn} onPress={() => { setShowReSearch(false); startSoulmate(); }}>
+                <Text style={styles.retryText}>🔄 Tekrar Dene</Text>
+              </Pressable>
+            )}
+
+            <Text style={styles.waitingHint}>
+              {status === 'waiting'
+                ? showReSearch
+                  ? 'Eşleşme bulunamadı. Tekrar deneyin veya bekleyin.'
+                  : 'Eşleşme aranıyor...'
+                : ''}
+            </Text>
           </View>
         </View>
       </SafeAreaView>
@@ -155,6 +202,17 @@ const styles = StyleSheet.create({
   ctaText: { color: '#FFFFFF', fontWeight: '800', fontSize: 16 },
   cancelBtn: { paddingVertical: 14, marginTop: 12 },
   cancelText: { color: COLORS.textMuted, fontWeight: '700' },
+  retryBtn: {
+    backgroundColor: COLORS.surfaceAlt,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: RADIUS.pill,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#EC4899',
+  },
+  retryText: { color: '#EC4899', fontWeight: '800', fontSize: 14 },
+  waitingHint: { color: COLORS.textMuted, fontSize: 12, marginTop: 14, textAlign: 'center', fontStyle: 'italic' },
   orbBig: {
     position: 'absolute',
     width: 240,
