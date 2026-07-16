@@ -122,6 +122,8 @@ export const api = {
   markChatRead: (peerId) => request(`/api/chats/${peerId}/read`, { method: 'POST' }),
   syncChat: (peerId, roomId) => request(`/api/chats/sync/${peerId}/${roomId}`, { method: 'POST' }),
   directChat: (peerId) => request(`/api/chats/direct/${peerId}`, { method: 'POST' }),
+  getChatMessages: (roomId, limit = 100) =>
+    request(`/api/chats/messages/${roomId}?limit=${limit}`),
 
   soulmateStatus: () => request('/api/shuffle/soulmate/status'),
 };

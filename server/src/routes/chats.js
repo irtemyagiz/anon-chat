@@ -161,4 +161,63 @@ router.post('/sync/:peerId/:roomId', authRequired, async (req, res) => {
   }
 });
 
+router.get('/messages/:roomId', authRequired, async (req, res) => {
+  try {
+    const roomId = req.params.roomId;
+    const limit = Math.min(200, parseInt(req.query.limit || '100', 10));
+    const messages = await Message.findAll({
+      where: { roomId },
+      order: [['createdAt', 'ASC']],
+      limit,
+    });
+    res.json({
+      messages: messages.map((m) => ({
+        id: String(m.id),
+        content: m.content,
+        senderId: m.senderId,
+        createdAt: m.createdAt,
+        flagged: m.flagged,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.post('/direct/:peerId', authRequired, async (req, res) => {
+  try {
+    const peerId = req.params.peerId;
+    if (peerId === req.user.id) {
+      return res.status(400).json({ error: 'cannot_chat_self' });
+    }
+    const peer = await User.findByPk(peerId);
+    if (!peer) return res.status(404).json({ error: 'peer_not_found' });
+    if (peer.isBanned) return res.status(403).json({ error: 'peer_banned' });
+
+    const ids = [req.user.id, peerId].sort();
+    const roomId = `dm_${ids[0]}_${ids[1]}`;
+
+    await Promise.all([
+      UserChat.findOrCreate({
+        where: { userId: req.user.id, peerId },
+        defaults: { roomId, lastReadAt: new Date() },
+      }),
+      UserChat.findOrCreate({
+        where: { userId: peerId, peerId: req.user.id },
+        defaults: { roomId, lastReadAt: new Date() },
+      }),
+    ]);
+
+    const { publicUser } = require('./auth');
+    res.json({
+      ok: true,
+      roomId,
+      peer: publicUser(peer, []),
+    });
+  } catch (err) {
+    console.error('[chats direct]', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 module.exports = router;

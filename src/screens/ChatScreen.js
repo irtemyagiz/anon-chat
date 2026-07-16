@@ -47,7 +47,7 @@ function ChatInner() {
   const roomId = directRoom || roomFromMatch;
   const isDirect = !!directRoom;
 
-  const { messages, peerTyping, send, setTyping, report } = useChat();
+  const { messages, peerTyping, loading, send, setTyping, report } = useChat();
   const [text, setText] = useState('');
   const [revealed, setRevealed] = useState(false);
   const [revealedPeer, setRevealedPeer] = useState(null);
@@ -180,6 +180,18 @@ function ChatInner() {
         )}
         contentContainerStyle={styles.listContent}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+        ListEmptyComponent={
+          loading ? (
+            <View style={{ padding: 40, alignItems: 'center' }}>
+              <ActivityIndicator color={COLORS.primary} />
+              <Text style={{ color: COLORS.textMuted, marginTop: 8 }}>Yükleniyor...</Text>
+            </View>
+          ) : (
+            <View style={{ padding: 40, alignItems: 'center' }}>
+              <Text style={{ color: COLORS.textMuted }}>Henüz mesaj yok. İlk mesajı sen yaz!</Text>
+            </View>
+          )
+        }
       />
 
       <View style={styles.inputRow}>
@@ -246,7 +258,7 @@ export default function ChatScreen({ route }) {
   const initialPeer = route?.params?.peer;
   return (
     <MatchProvider initialRoomId={initialRoomId} initialPeer={initialPeer}>
-      <ChatProvider roomId={initialRoomId}>
+      <ChatProvider roomId={initialRoomId} peerId={initialPeer?.id}>
         <ChatInner />
       </ChatProvider>
     </MatchProvider>

@@ -1,5 +1,5 @@
-import { useNavigation } from '@react-navigation/native';
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useNavigation } from '@react-navigation/native';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -19,7 +19,7 @@ import { api } from '../services/api';
 
 const SWIPE_THRESHOLD = 80;
 
-function ChatRow({ item, onPress, onPin, onDelete, isPinned, canPin }) {
+const ChatRow = memo(function ChatRow({ item, onPress, onPin, onDelete, isPinned, canPin }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const [revealed, setRevealed] = useState(null);
 
@@ -68,7 +68,7 @@ function ChatRow({ item, onPress, onPin, onDelete, isPinned, canPin }) {
   const last = item.lastMessage;
   const preview = last
     ? (last.senderId === item.peer.id ? '' : 'Sen: ') + last.content
-    : 'Henüz mesaj yok';
+    : 'HenÃ¼z mesaj yok';
 
   return (
     <View style={styles.rowWrap}>
@@ -80,11 +80,11 @@ function ChatRow({ item, onPress, onPin, onDelete, isPinned, canPin }) {
             if (isPinned) onDelete.action = null;
             else if (canPin) onPin.pin();
             else
-              Alert.alert('Limit doldu', 'En fazla 3 sohbet sabitleyebilirsin. Birini sabitlemeden önce diğerini çıkar.');
+              Alert.alert('Limit doldu', 'En fazla 3 sohbet sabitleyebilirsin. Birini sabitlemeden Ã¶nce diÄŸerini Ã§Ä±kar.');
           }}
         >
-          <Text style={styles.actionEmoji}>{isPinned ? '📌' : '📍'}</Text>
-          <Text style={styles.actionLabel}>{isPinned ? 'Çıkar' : 'Sabitle'}</Text>
+          <Text style={styles.actionEmoji}>{isPinned ? 'ğŸ“Œ' : 'ğŸ“'}</Text>
+          <Text style={styles.actionLabel}>{isPinned ? 'Ã‡Ä±kar' : 'Sabitle'}</Text>
         </Pressable>
         <Pressable
           style={[styles.actionButton, styles.deleteButton]}
@@ -93,7 +93,7 @@ function ChatRow({ item, onPress, onPin, onDelete, isPinned, canPin }) {
             onDelete.delete();
           }}
         >
-          <Text style={styles.actionEmoji}>🗑️</Text>
+          <Text style={styles.actionEmoji}>ğŸ—‘ï¸</Text>
           <Text style={styles.actionLabel}>Sil</Text>
         </Pressable>
       </View>
@@ -122,7 +122,7 @@ function ChatRow({ item, onPress, onPin, onDelete, isPinned, canPin }) {
               <Text style={styles.rowName} numberOfLines={1}>
                 {item.peer.nickname}
               </Text>
-              {isPinned && <Text style={styles.pinIcon}>📌</Text>}
+              {isPinned && <Text style={styles.pinIcon}>ğŸ“Œ</Text>}
               {last?.createdAt && (
                 <Text style={styles.rowTime}>
                   {formatTime(last.createdAt)}
@@ -149,7 +149,7 @@ function formatTime(dateStr) {
   const diffMin = Math.floor(diffMs / 60000);
   const diffHr = Math.floor(diffMs / 3600000);
   const diffDay = Math.floor(diffMs / 86400000);
-  if (diffMin < 1) return 'şimdi';
+  if (diffMin < 1) return 'ÅŸimdi';
   if (diffMin < 60) return `${diffMin}dk`;
   if (diffHr < 24) return `${diffHr}sa`;
   if (diffDay < 7) return `${diffDay}g`;
@@ -211,9 +211,9 @@ export default function ChatsScreen() {
   const deleteChat = (peerId, nickname) => {
     Alert.alert(
       'Sohbeti Sil',
-      `${nickname} ile olan sohbet listeden kaldırılacak.`,
+      `${nickname} ile olan sohbet listeden kaldÄ±rÄ±lacak.`,
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'VazgeÃ§', style: 'cancel' },
         {
           text: 'Sil',
           style: 'destructive',
@@ -256,16 +256,16 @@ export default function ChatsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Mesajlar</Text>
         {pinnedCount > 0 && (
-          <Text style={styles.pinCount}>📌 {pinnedCount}/3 sabit</Text>
+          <Text style={styles.pinCount}>ğŸ“Œ {pinnedCount}/3 sabit</Text>
         )}
       </View>
 
       {chats.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>💬</Text>
-          <Text style={styles.emptyTitle}>Henüz sohbet yok</Text>
+          <Text style={styles.emptyEmoji}>ğŸ’¬</Text>
+          <Text style={styles.emptyTitle}>HenÃ¼z sohbet yok</Text>
           <Text style={styles.emptySub}>
-            Keşfet sekmesinden biriyle eşleşince sohbetler burada görünür.
+            KeÅŸfet sekmesinden biriyle eÅŸleÅŸince sohbetler burada gÃ¶rÃ¼nÃ¼r.
           </Text>
         </View>
       ) : (
