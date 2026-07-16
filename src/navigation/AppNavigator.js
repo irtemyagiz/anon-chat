@@ -1,19 +1,27 @@
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '../config';
 import { useAuth } from '../store/AuthContext';
-import WelcomeScreen from '../screens/WelcomeScreen';
-import RulesScreen from '../screens/RulesScreen';
-import NicknameScreen from '../screens/NicknameScreen';
-import InterestsSelectScreen from '../screens/InterestsSelectScreen';
-import HomeScreen from '../screens/HomeScreen';
-import MatchingScreen from '../screens/MatchingScreen';
-import ChatScreen from '../screens/ChatScreen';
-import PostChatScreen from '../screens/PostChatScreen';
-import ProfileScreen from '../screens/ProfileScreen';
 
-const Stack = createNativeStackNavigator();
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
+import ProfileCompletionScreen from '../screens/ProfileCompletionScreen';
+
+import ShuffleScreen from '../screens/ShuffleScreen';
+import FriendsScreen from '../screens/FriendsScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
+
+import ChatScreen from '../screens/ChatScreen';
+import MatchingScreen from '../screens/MatchingScreen';
+import PostChatScreen from '../screens/PostChatScreen';
+import UserProfileScreen from '../screens/UserProfileScreen';
+import PaywallScreen from '../screens/PaywallScreen';
+
+const AuthStack = createNativeStackNavigator();
+const MainTabs = createBottomTabNavigator();
+const RootStack = createNativeStackNavigator();
 
 const navTheme = {
   ...DefaultTheme,
@@ -43,50 +51,78 @@ function Splash() {
   );
 }
 
-function isOnboardingDone(user) {
-  if (!user) return false;
-  if (!user.ageConfirmed) return false;
-  if (!user.rulesAcceptedAt) return false;
-  if (!user.nickname || user.nickname.startsWith('Anon')) return false;
-  return true;
+function AuthFlow() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+      <AuthStack.Screen name="ProfileCompletion" component={ProfileCompletionScreen} options={{ headerShown: true, title: 'Profil', headerStyle: { backgroundColor: COLORS.bg }, headerTintColor: COLORS.textPrimary }} />
+    </AuthStack.Navigator>
+  );
 }
 
-function getInitialMainRoute(user) {
-  if (user && Array.isArray(user.interestIds) && user.interestIds.length > 0) {
-    return 'Home';
-  }
-  return 'InterestsSelect';
+function TabIcon({ emoji, focused }) {
+  return (
+    <Text style={{ fontSize: focused ? 24 : 20, opacity: focused ? 1 : 0.55 }}>{emoji}</Text>
+  );
+}
+
+function MainFlow() {
+  return (
+    <MainTabs.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { backgroundColor: COLORS.surface, borderTopColor: COLORS.border, height: 64, paddingTop: 8, paddingBottom: 8 },
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textMuted,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+      }}
+    >
+      <MainTabs.Screen
+        name="ShuffleTab"
+        component={ShuffleScreen}
+        options={{ title: 'Keşfet', tabBarIcon: ({ focused }) => <TabIcon emoji="🎲" focused={focused} /> }}
+      />
+      <MainTabs.Screen
+        name="FriendsTab"
+        component={FriendsScreen}
+        options={{ title: 'Arkadaşlar', tabBarIcon: ({ focused }) => <TabIcon emoji="👥" focused={focused} /> }}
+      />
+      <MainTabs.Screen
+        name="ProfileTab"
+        component={EditProfileScreen}
+        options={{ title: 'Profil', tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} /> }}
+      />
+    </MainTabs.Navigator>
+  );
 }
 
 export default function AppNavigator() {
-  const { bootstrapping, user } = useAuth();
+  const { bootstrapping, user, token } = useAuth();
 
   if (bootstrapping) return <Splash />;
 
-  const onboardingDone = isOnboardingDone(user);
+  const hasAuth = !!token && !!user;
+  const needsProfile = user && (!user.ageConfirmed || !user.bio);
 
   return (
     <NavigationContainer theme={navTheme}>
-      {!onboardingDone ? (
-        <Stack.Navigator key="onboarding" initialRouteName="Welcome" screenOptions={screenOptions}>
-          <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Rules" component={RulesScreen} options={{ title: '' }} />
-          <Stack.Screen name="Nickname" component={NicknameScreen} options={{ title: 'Rumuz Seç' }} />
-        </Stack.Navigator>
-      ) : (
-        <Stack.Navigator
-          key="main"
-          initialRouteName={getInitialMainRoute(user)}
-          screenOptions={screenOptions}
-        >
-          <Stack.Screen name="InterestsSelect" component={InterestsSelectScreen} options={{ title: 'İlgi Alanların' }} />
-          <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Matching" component={MatchingScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="PostChat" component={PostChatScreen} options={{ title: '' }} />
-          <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
-        </Stack.Navigator>
-      )}
+      <RootStack.Navigator screenOptions={screenOptions}>
+        {!hasAuth ? (
+          <RootStack.Screen name="Auth" component={AuthFlow} options={{ headerShown: false }} />
+        ) : needsProfile ? (
+          <RootStack.Screen name="ProfileCompletion" component={ProfileCompletionScreen} options={{ title: 'Profilini Tamamla' }} />
+        ) : (
+          <>
+            <RootStack.Screen name="Main" component={MainFlow} options={{ headerShown: false }} />
+            <RootStack.Screen name="Matching" component={MatchingScreen} options={{ headerShown: false }} />
+            <RootStack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+            <RootStack.Screen name="PostChat" component={PostChatScreen} options={{ title: '' }} />
+            <RootStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: '' }} />
+            <RootStack.Screen name="Paywall" component={PaywallScreen} options={{ title: 'Plus' }} />
+          </>
+        )}
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 }

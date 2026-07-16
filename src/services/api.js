@@ -45,8 +45,11 @@ async function request(path, { method = 'GET', body, headers = {} } = {}) {
 export const api = {
   health: () => request('/api/health'),
 
-  authDevice: (deviceId) =>
-    request('/api/auth/device', { method: 'POST', body: { deviceId } }),
+  register: ({ email, password, username, nickname }) =>
+    request('/api/auth/register', { method: 'POST', body: { email, password, username, nickname } }),
+
+  login: (email, password) =>
+    request('/api/auth/login', { method: 'POST', body: { email, password } }),
 
   getMe: () => request('/api/auth/me'),
 
@@ -56,4 +59,32 @@ export const api = {
   getInterests: () => request('/api/interests'),
 
   seedInterests: () => request('/api/interests/seed', { method: 'POST' }),
+
+  getUser: (id) => request(`/api/users/${id}`),
+
+  follow: (id) => request(`/api/users/${id}/follow`, { method: 'POST' }),
+  unfollow: (id) => request(`/api/users/${id}/follow`, { method: 'DELETE' }),
+  getFollowers: (id) => request(`/api/users/${id}/followers`),
+  getFollowing: (id) => request(`/api/users/${id}/following`),
+
+  shuffleNext: (params) => {
+    const qs = new URLSearchParams(params || {}).toString();
+    return request(`/api/shuffle/next${qs ? `?${qs}` : ''}`);
+  },
+  shuffleStatus: () => request('/api/shuffle/status'),
+  upgradePlus: () => request('/api/shuffle/upgrade', { method: 'POST' }),
+  downgradePlus: () => request('/api/shuffle/downgrade', { method: 'POST' }),
+
+  getFriends: () => request('/api/friends'),
+  getFriendSuggestions: () => request('/api/friends/suggestions'),
+  addFriend: (id) => request(`/api/friends/${id}/auto-add`, { method: 'POST' }),
+  removeFriend: (id) => request(`/api/friends/${id}`, { method: 'DELETE' }),
+
+  uploadPhoto: ({ recipientId, contentBase64, isOneTime }) =>
+    request('/api/photos/upload', {
+      method: 'POST',
+      body: { recipientId, contentBase64, isOneTime },
+    }),
+  getPhoto: (id) => request(`/api/photos/${id}`),
+  listPhotos: () => request('/api/photos/inbox/list'),
 };
