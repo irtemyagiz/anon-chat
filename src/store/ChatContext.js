@@ -78,13 +78,14 @@ export function ChatProvider({ children, roomId }) {
       { id: tempId, content: text, pending: true, createdAt: new Date().toISOString() },
     ]);
     socket.emit('chat:message', { content: text, roomId });
+    socket.emit('chat:typing', { typing: false, roomId });
   }, [roomId]);
 
   const setTyping = useCallback((typing) => {
     const socket = getSocket();
-    if (!socket) return;
-    socket.emit('chat:typing', { typing });
-  }, []);
+    if (!socket || !roomId) return;
+    socket.emit('chat:typing', { typing, roomId });
+  }, [roomId]);
 
   const report = useCallback((reason = 'inappropriate', note) => {
     const socket = getSocket();

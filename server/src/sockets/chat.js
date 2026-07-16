@@ -16,6 +16,12 @@ function isFlagged(text) {
 function initChatHandler(io, socket) {
   const user = socket.data.user;
 
+  socket.on('chat:join', ({ roomId } = {}) => {
+    if (!roomId || typeof roomId !== 'string') return;
+    socket.data.roomId = roomId;
+    socket.join(roomId);
+  });
+
   socket.on('chat:message', async ({ content, roomId: incomingRoomId } = {}) => {
     const roomId = incomingRoomId || socket.data.roomId;
     if (!roomId) return socket.emit('chat:error', { error: 'no_room' });
@@ -26,14 +32,17 @@ function initChatHandler(io, socket) {
     const flagged = isFlagged(trimmed);
 
     try {
+      socket.data.roomId = roomId;
+      if (!socket.rooms.has(roomId)) {
+        socket.join(roomId);
+      }
+
       const msg = await Message.create({
         roomId,
         senderId: user.id,
         content: trimmed,
         flagged,
       });
-
-      socket.data.roomId = roomId;
 
       socket.to(roomId).emit('chat:message', {
         id: msg.id,
@@ -49,9 +58,10 @@ function initChatHandler(io, socket) {
     }
   });
 
-  socket.on('chat:typing', ({ typing } = {}) => {
-    const roomId = socket.data.roomId;
+  socket.on('chat:typing', ({ typing, roomId: incomingRoomId } = {}) => {
+    const roomId = incomingRoomId || socket.data.roomId;
     if (!roomId) return;
+    socket.data.roomId = roomId;
     socket.to(roomId).emit('chat:typing', { userId: user.id, typing: !!typing });
   });
 
