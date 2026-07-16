@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Avatar, { AVATAR_STYLES, defaultStyleForGender } from '../components/Avatar';
 import { COLORS, RADIUS } from '../config';
 import { useAuth } from '../store/AuthContext';
@@ -87,8 +88,9 @@ export default function EditProfileScreen() {
   const visibleStyles = AVATAR_STYLES;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
         <View style={styles.photoWrap}>
           {uploadingPhoto && <ActivityIndicator size="small" color={COLORS.primary} style={{ position: 'absolute', zIndex: 2 }} />}
           <Avatar
@@ -193,10 +195,12 @@ export default function EditProfileScreen() {
         <Text style={styles.adminBtnText}>🔒 Admin Paneli</Text>
       </Pressable>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: COLORS.bg },
   container: { flex: 1, backgroundColor: COLORS.bg },
   content: { padding: 20, paddingBottom: 60 },
   header: { alignItems: 'center', marginVertical: 16 },

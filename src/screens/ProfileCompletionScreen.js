@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Avatar, { AVATAR_STYLES, defaultStyleForGender } from '../components/Avatar';
 import { COLORS, RADIUS } from '../config';
 import { useInterests } from '../store/InterestsContext';
@@ -132,8 +133,9 @@ export default function ProfileCompletionScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <View style={styles.photoSection}>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.photoSection}>
         <Pressable onPress={pickPhoto}>
           <Avatar
             seed={`preview_${avatarStyle}`}
@@ -247,11 +249,13 @@ export default function ProfileCompletionScreen() {
       >
         <Text style={styles.buttonText}>{submitting ? 'Kaydediliyor...' : 'Profili Kaydet'}</Text>
       </Pressable>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: COLORS.bg },
   container: { flex: 1, backgroundColor: COLORS.bg },
   content: { padding: 20, paddingBottom: 60 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
