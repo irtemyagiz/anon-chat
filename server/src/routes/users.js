@@ -122,11 +122,28 @@ router.post('/:id/follow', authRequired, async (req, res) => {
     follow = existing;
   }
 
+  let mutual = false;
+  const reverse = await Follow.findOne({
+    where: {
+      followerId: targetId,
+      followedId: req.user.id,
+      status: 'pending',
+    },
+  });
+  if (reverse) {
+    follow.status = 'accepted';
+    await follow.save();
+    reverse.status = 'accepted';
+    await reverse.save();
+    mutual = true;
+  }
+
   res.json({
     ok: true,
     status: follow.status,
     isFollowing: follow.status === 'accepted',
     created,
+    mutual,
   });
 });
 
@@ -144,7 +161,18 @@ router.post('/:id/follow/accept', authRequired, async (req, res) => {
   }
   existing.status = 'accepted';
   await existing.save();
-  res.json({ ok: true, status: 'accepted' });
+
+  let mutual = false;
+  const reverse = await Follow.findOne({
+    where: { followerId: req.user.id, followedId: requesterId, status: 'pending' },
+  });
+  if (reverse) {
+    reverse.status = 'accepted';
+    await reverse.save();
+    mutual = true;
+  }
+
+  res.json({ ok: true, status: 'accepted', mutual });
 });
 
 router.post('/:id/follow/reject', authRequired, async (req, res) => {

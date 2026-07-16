@@ -106,4 +106,11 @@ export const api = {
   adminPatchUser: (id, patch) =>
     request(`/api/admin/users/${id}`, { method: 'PATCH', body: patch }),
   adminDeleteUser: (id) => request(`/api/admin/users/${id}`, { method: 'DELETE' }),
+
+  getChats: () => request('/api/chats'),
+  pinChat: (peerId) => request(`/api/chats/${peerId}/pin`, { method: 'POST' }),
+  unpinChat: (peerId) => request(`/api/chats/${peerId}/unpin`, { method: 'POST' }),
+  deleteChat: (peerId) => request(`/api/chats/${peerId}`, { method: 'DELETE' }),
+  markChatRead: (peerId) => request(`/api/chats/${peerId}/read`, { method: 'POST' }),
+  syncChat: (peerId, roomId) => request(`/api/chats/sync/${peerId}/${roomId}`, { method: 'POST' }),
 };

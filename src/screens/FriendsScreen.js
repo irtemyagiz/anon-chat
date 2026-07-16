@@ -17,7 +17,6 @@ import { api } from '../services/api';
 import { useAuth } from '../store/AuthContext';
 
 const TABS = [
-  { id: 'following', label: 'Takip Ettiklerin' },
   { id: 'followers', label: 'Takipçiler' },
   { id: 'requests', label: 'İstekler' },
 ];
@@ -25,8 +24,7 @@ const TABS = [
 export default function FriendsScreen() {
   const navigation = useNavigation();
   const { user, refreshUser } = useAuth();
-  const [tab, setTab] = useState('following');
-  const [following, setFollowing] = useState([]);
+  const [tab, setTab] = useState('followers');
   const [followers, setFollowers] = useState({ count: 0, blurred: false, items: [] });
   const [requests, setRequests] = useState({ count: 0, blurred: false, items: [] });
   const [loading, setLoading] = useState(true);
@@ -35,12 +33,10 @@ export default function FriendsScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [f, fr, rq] = await Promise.all([
-        api.getMyFollowing(),
+      const [fr, rq] = await Promise.all([
         api.getMyFollowers(),
         api.getFollowRequests(),
       ]);
-      setFollowing(f.following || []);
       setFollowers(fr);
       setRequests(rq);
     } catch (err) {
@@ -88,15 +84,6 @@ export default function FriendsScreen() {
     }
   };
 
-  const unfollow = async (id) => {
-    try {
-      await api.unfollow(id);
-      await load();
-    } catch (err) {
-      Alert.alert('Hata', err.message);
-    }
-  };
-
   if (loading) {
     return (
       <View style={styles.center}>
@@ -104,19 +91,6 @@ export default function FriendsScreen() {
       </View>
     );
   }
-
-  const renderFollowing = ({ item }) => (
-    <View style={styles.row}>
-      <Avatar seed={item.id} size={48} avatarStyle={item.avatarStyle} photoUrl={item.photoUrl} isPlus={!!item.isPlus} />
-      <Pressable style={styles.rowInfo} onPress={() => navigation.navigate('UserProfile', { userId: item.id })}>
-        <Text style={styles.rowName}>{item.nickname}</Text>
-        <Text style={styles.rowMeta}>@{item.username || 'anonim'}</Text>
-      </Pressable>
-      <Pressable style={styles.unfollowBtn} onPress={() => unfollow(item.id)}>
-        <Text style={styles.unfollowText}>Takipten Çık</Text>
-      </Pressable>
-    </View>
-  );
 
   const renderFollowerItem = ({ item }) => (
     <Pressable style={styles.row} onPress={() => navigation.navigate('UserProfile', { userId: item.id })}>
@@ -186,7 +160,7 @@ export default function FriendsScreen() {
       </View>
       <View style={styles.tabBar}>
         {TABS.map((t) => {
-          const count = t.id === 'followers' ? followers.count : t.id === 'requests' ? requests.count : following.length;
+          const count = t.id === 'followers' ? followers.count : requests.count;
           const active = tab === t.id;
           return (
             <Pressable
@@ -200,24 +174,6 @@ export default function FriendsScreen() {
           );
         })}
       </View>
-
-      {tab === 'following' && (
-        <FlatList
-          data={following}
-          keyExtractor={(item) => item.id}
-          renderItem={renderFollowing}
-          contentContainerStyle={styles.list}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={COLORS.primary} />}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>👥</Text>
-              <Text style={styles.emptyTitle}>Henüz kimseyi takip etmiyorsun</Text>
-              <Text style={styles.emptySub}>Keşfet sekmesinden insanları takip edebilirsin.</Text>
-            </View>
-          }
-        />
-      )}
 
       {tab === 'followers' && (
         followers.blurred ? (

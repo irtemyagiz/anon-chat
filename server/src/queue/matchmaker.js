@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { Op } = require('sequelize');
 const User = require('../models/User');
+const UserChat = require('../models/UserChat');
 const { UserInterest } = require('../models/Interest');
 const Message = require('../models/Message');
 
@@ -58,6 +59,17 @@ function initMatchmaker(io, socket) {
 
       other.socket.join(roomId);
       socket.join(roomId);
+
+      await Promise.all([
+        UserChat.findOrCreate({
+          where: { userId: user.id, peerId: other.user.id },
+          defaults: { roomId, lastReadAt: new Date() },
+        }),
+        UserChat.findOrCreate({
+          where: { userId: other.user.id, peerId: user.id },
+          defaults: { roomId, lastReadAt: new Date() },
+        }),
+      ]).catch((e) => console.warn('[userchat upsert]', e.message));
 
       const meAnonymity = !!user.anonymityEnabled;
       const themAnonymity = !!other.user.anonymityEnabled;

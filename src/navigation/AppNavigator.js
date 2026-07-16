@@ -10,6 +10,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 import ProfileCompletionScreen from '../screens/ProfileCompletionScreen';
 
 import ShuffleScreen from '../screens/ShuffleScreen';
+import ChatsScreen from '../screens/ChatsScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import PlusScreen from '../screens/PlusScreen';
@@ -97,6 +98,11 @@ function MainFlow() {
         name="ShuffleTab"
         component={ShuffleScreen}
         options={{ title: 'Keşfet', tabBarIcon: ({ focused }) => <TabIcon emoji="🎲" focused={focused} /> }}
+      />
+      <MainTabs.Screen
+        name="ChatsTab"
+        component={ChatsScreen}
+        options={{ title: 'Mesajlar', tabBarIcon: ({ focused }) => <TabIcon emoji="💬" focused={focused} /> }}
       />
       <MainTabs.Screen
         name="FriendsTab"

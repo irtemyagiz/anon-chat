@@ -21,9 +21,10 @@ export function defaultStyleForGender(gender) {
 
 export function avatarUrl({ seed, style = DEFAULT_AVATAR_STYLE, gender, size = 200 }) {
   if (!seed) seed = 'anon';
+  const finalSeed = `${seed}_${style || DEFAULT_AVATAR_STYLE}`;
 
   const params = new URLSearchParams({
-    seed: String(seed),
+    seed: finalSeed,
     size: String(size),
     backgroundType: 'solid',
   });

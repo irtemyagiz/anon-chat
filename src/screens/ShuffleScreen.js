@@ -83,7 +83,12 @@ export default function ShuffleScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Keşfet</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>Keşfet</Text>
+          <Pressable style={styles.refreshIcon} onPress={() => load(true)}>
+            <Text style={styles.refreshIconText}>🔄</Text>
+          </Pressable>
+        </View>
         <View style={styles.metaRow}>
           {!isPlus && remaining !== null && (
             <View style={styles.metaPill}>
@@ -198,7 +203,19 @@ export default function ShuffleScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { color: COLORS.textPrimary, fontSize: 28, fontWeight: '800' },
+  refreshIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  refreshIconText: { fontSize: 18 },
   metaRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   metaPill: {
     backgroundColor: COLORS.surface,

@@ -209,9 +209,11 @@ function ChatInner() {
   );
 }
 
-export default function ChatScreen() {
+export default function ChatScreen({ route }) {
+  const initialRoomId = route?.params?.roomId;
+  const initialPeer = route?.params?.peer;
   return (
-    <MatchProvider>
+    <MatchProvider initialRoomId={initialRoomId} initialPeer={initialPeer}>
       <ChatProvider>
         <ChatInner />
       </ChatProvider>
