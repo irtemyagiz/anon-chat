@@ -84,11 +84,7 @@ export default function EditProfileScreen() {
     await logout();
   };
 
-  const visibleStyles = AVATAR_STYLES.filter(
-    (s) => s.gender === 'any' || s.gender === user?.gender || !user?.gender
-  );
-  const genderSpecific = visibleStyles.filter((s) => s.gender !== 'any');
-  const neutral = visibleStyles.filter((s) => s.gender === 'any');
+  const visibleStyles = AVATAR_STYLES;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -117,15 +113,15 @@ export default function EditProfileScreen() {
         </View>
       </View>
 
-      <Text style={styles.label}>Avatar Stili</Text>
+      <Text style={styles.label}>Avatar Stili {user?.gender && `(${user.gender === 'female' ? 'Kadın' : 'Erkek'})`}</Text>
       <View style={styles.styleGrid}>
-        {[...genderSpecific, ...neutral].map((s) => (
+        {AVATAR_STYLES.map((s) => (
           <Pressable
             key={s.id}
             style={[styles.styleCard, avatarStyle === s.id && styles.styleCardActive]}
             onPress={() => setAvatarStyle(s.id)}
           >
-            <Avatar seed={user?.id || 'me'} size={48} avatarStyle={s.id} />
+            <Avatar seed={`sample_${s.id}`} size={48} gender={user?.gender} />
             <Text style={[styles.styleLabel, avatarStyle === s.id && styles.styleLabelActive]}>
               {s.label}
             </Text>

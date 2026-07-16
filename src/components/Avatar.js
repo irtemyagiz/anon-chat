@@ -1,29 +1,59 @@
 import { Image, Text, View } from 'react-native';
 
 export const AVATAR_STYLES = [
-  { id: 'avataaars', label: 'Klasik', emoji: '👤', gender: 'male' },
-  { id: 'lorelei', label: 'Lorelei', emoji: '💁‍♀️', gender: 'female' },
-  { id: 'adventurer', label: 'Maceracı', emoji: '🧝', gender: 'any' },
-  { id: 'bottts', label: 'Robot', emoji: '🤖', gender: 'any' },
-  { id: 'fun-emoji', label: 'Emoji', emoji: '😀', gender: 'any' },
-  { id: 'micah', label: 'Minimal', emoji: '◽', gender: 'any' },
-  { id: 'personas', label: 'İllüstrasyon', emoji: '🎨', gender: 'any' },
-  { id: 'thumbs', label: 'Parmak', emoji: '👍', gender: 'any' },
-  { id: 'shapes', label: 'Şekiller', emoji: '🔷', gender: 'any' },
+  { id: 'classic', label: 'Klasik', emoji: '👤' },
+  { id: 'modern', label: 'Modern', emoji: '🧑' },
+  { id: 'casual', label: 'Rahat', emoji: '😎' },
+  { id: 'elegant', label: 'Şık', emoji: '🤵' },
+  { id: 'artistic', label: 'Sanatsal', emoji: '🎨' },
+  { id: 'friendly', label: 'Samimi', emoji: '😊' },
+  { id: 'mystery', label: 'Gizemli', emoji: '🌙' },
+  { id: 'playful', label: 'Eğlenceli', emoji: '🎉' },
 ];
 
-export const DEFAULT_AVATAR_STYLE = 'adventurer';
+export const DEFAULT_AVATAR_STYLE = 'classic';
 
-export function defaultStyleForGender(gender) {
-  if (gender === 'female') return 'lorelei';
-  if (gender === 'male') return 'avataaars';
-  return DEFAULT_AVATAR_STYLE;
+const MALE_PARAMS = {
+  facialHairProbability: 80,
+  facialHair: 'beardMajestic',
+};
+
+const FEMALE_STYLES = ['lorelei'];
+const MALE_STYLES = ['avataaars'];
+
+function pickDicebearStyle(label, gender) {
+  if (gender === 'female') {
+    const i = label.charCodeAt(0) % FEMALE_STYLES.length;
+    return FEMALE_STYLES[i];
+  }
+  if (gender === 'male') {
+    const i = label.charCodeAt(0) % MALE_STYLES.length;
+    return MALE_STYLES[i];
+  }
+  return 'adventurer';
 }
 
-export function avatarUrl({ seed, style = DEFAULT_AVATAR_STYLE, size = 200 }) {
+export function avatarUrl({ seed, style = DEFAULT_AVATAR_STYLE, gender, size = 200 }) {
   if (!seed) seed = 'anon';
-  const s = AVATAR_STYLES.find((x) => x.id === style) ? style : DEFAULT_AVATAR_STYLE;
-  return `https://api.dicebear.com/7.x/${s}/png?seed=${encodeURIComponent(seed)}&size=${size}`;
+  const effectiveStyle = pickDicebearStyle(style, gender);
+
+  let url;
+  if (gender === 'female') {
+    url = `https://api.dicebear.com/7.x/${effectiveStyle}/png?seed=${encodeURIComponent(seed)}&size=${size}`;
+  } else if (gender === 'male') {
+    const params = new URLSearchParams({
+      seed,
+      size: String(size),
+      facialHairProbability: String(MALE_PARAMS.facialHairProbability),
+      facialHair: MALE_PARAMS.facialHair,
+    });
+    url = `https://api.dicebear.com/7.x/${effectiveStyle}/png?${params.toString()}`;
+  } else {
+    const s = AVATAR_STYLES.find((x) => x.id === style) ? style : DEFAULT_AVATAR_STYLE;
+    const dbStyle = pickDicebearStyle(s, undefined);
+    url = `https://api.dicebear.com/7.x/${dbStyle}/png?seed=${encodeURIComponent(seed)}&size=${size}`;
+  }
+  return url;
 }
 
 export default function Avatar({
@@ -35,13 +65,15 @@ export default function Avatar({
   containerStyle,
   isPlus = false,
   showPlusBadge = false,
+  gender,
   ...props
 }) {
   const url =
     photoUrl ||
     avatarUrl({
       seed: seed || 'anon',
-      style: avatarStyle || DEFAULT_AVATAR_STYLE,
+      style: avatarStyle,
+      gender,
       size: size * 2,
     });
 

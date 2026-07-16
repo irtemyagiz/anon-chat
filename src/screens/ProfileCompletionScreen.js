@@ -131,12 +131,6 @@ export default function ProfileCompletionScreen() {
     );
   }
 
-  const visibleStyles = AVATAR_STYLES.filter(
-    (s) => s.gender === 'any' || s.gender === gender || !gender
-  );
-  const genderSpecificStyles = visibleStyles.filter((s) => s.gender !== 'any');
-  const neutralStyles = visibleStyles.filter((s) => s.gender === 'any');
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.photoSection}>
@@ -170,15 +164,17 @@ export default function ProfileCompletionScreen() {
         ))}
       </View>
 
-      <Text style={styles.label}>Avatar Stili {gender && `(${gender === 'female' ? 'kadın' : 'erkek'} için önerilenler üstte)`}</Text>
+      <Text style={styles.label}>
+        Avatar Stili {gender ? `(${gender === 'female' ? 'Kadın' : 'Erkek'} için örnekler)` : 'Seç'}
+      </Text>
       <View style={styles.styleGrid}>
-        {[...genderSpecificStyles, ...neutralStyles].map((s) => (
+        {AVATAR_STYLES.map((s) => (
           <Pressable
             key={s.id}
             style={[styles.styleCard, avatarStyle === s.id && styles.styleCardActive]}
             onPress={() => setAvatarStyle(s.id)}
           >
-            <Avatar seed={user?.id || 'sample'} size={56} avatarStyle={s.id} />
+            <Avatar seed={`sample_${s.id}`} size={56} gender={gender} />
             <Text style={[styles.styleLabel, avatarStyle === s.id && styles.styleLabelActive]}>
               {s.label}
             </Text>
