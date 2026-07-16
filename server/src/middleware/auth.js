@@ -1,6 +1,6 @@
 const { verifyToken } = require('../lib/jwt');
 const User = require('../models/User');
-const Ban = require('../models/Ban');
+const { Op } = require('sequelize');
 
 const authRequired = async (req, res, next) => {
   try {
@@ -17,21 +17,10 @@ const authRequired = async (req, res, next) => {
     if (user.isBanned) {
       return res.status(403).json({ error: 'banned' });
     }
-    const activeBan = await Ban.findOne({
-      where: {
-        deviceId: user.deviceId,
-        expiresAt: { [require('sequelize').Op.gt]: new Date() },
-      },
-    });
-    if (activeBan) {
-      return res.status(403).json({
-        error: 'banned',
-        expiresAt: activeBan.expiresAt,
-      });
-    }
     req.user = user;
     next();
   } catch (err) {
+    console.error('[authRequired]', err.message);
     return res.status(401).json({ error: 'invalid_token' });
   }
 };
