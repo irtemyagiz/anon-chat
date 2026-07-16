@@ -28,9 +28,8 @@ function MessageBubble({ item, isMine }) {
           {item.content}
         </Text>
         {item.pending ? <Text style={styles.pendingText}>...</Text> : null}
-</View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      </View>
+    </View>
   );
 }
 
