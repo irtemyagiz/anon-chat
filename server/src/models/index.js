@@ -1,4 +1,4 @@
-const { Sequelize } = require('sequelize');
+const { Sequelize, Op } = require('sequelize');
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
@@ -30,6 +30,16 @@ const connectDB = async () => {
       if (updated > 0) console.log(`[db] ${updated} kullanıcıya ageConfirmed=true set edildi`);
     } catch (e) {
       console.warn('[db] ageConfirmed backfill hatası:', e.message);
+    }
+    try {
+      const User = require('./User');
+      const [reset] = await User.update(
+        { dailySoulmateCount: 0, lastSoulmateResetAt: new Date() },
+        { where: { dailySoulmateCount: { [Op.gt]: 0 } } }
+      );
+      if (reset > 0) console.log(`[db] ${reset} kullanıcının soulmate count sıfırlandı`);
+    } catch (e) {
+      console.warn('[db] soulmate reset hatası:', e.message);
     }
   } catch (err) {
     console.error('[db] Bağlantı hatası:', err.message);

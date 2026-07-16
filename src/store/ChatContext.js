@@ -77,7 +77,7 @@ export function ChatProvider({ children, roomId }) {
       ...prev,
       { id: tempId, content: text, pending: true, createdAt: new Date().toISOString() },
     ]);
-    socket.emit('chat:message', { content: text });
+    socket.emit('chat:message', { content: text, roomId });
   }, [roomId]);
 
   const setTyping = useCallback((typing) => {

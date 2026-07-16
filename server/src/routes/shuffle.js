@@ -1,5 +1,5 @@
 const express = require('express');
-const { Op } = require('sequelize');
+const { Op, literal } = require('sequelize');
 const User = require('../models/User');
 const Follow = require('../models/Follow');
 const { UserInterest } = require('../models/Interest');
@@ -8,7 +8,8 @@ const { publicUser } = require('./auth');
 
 const router = express.Router();
 
-const DAILY_FREE_LIMIT = 50;
+const DAILY_FREE_LIMIT = 25;
+const DAILY_SOULMATE_LIMIT = 5;
 
 const PLUS_TIERS = {
   '1d': { days: 1, label: '1 Gün', price: 9.99 },
@@ -90,7 +91,7 @@ router.get('/next', authRequired, async (req, res) => {
     const limit = parseInt(req.query.limit || '30', 10);
     const pool = await User.findAll({
       where,
-      order: [['lastSeenAt', 'DESC']],
+      order: [[literal('RANDOM()')]],
       limit: Math.min(50, Math.max(1, limit)),
     });
 
@@ -150,6 +151,26 @@ router.get('/status', authRequired, async (req, res) => {
     used: req.user.dailyShuffleCount,
     limit: isPlus(req.user) ? null : DAILY_FREE_LIMIT,
     remaining: isPlus(req.user) ? null : Math.max(0, DAILY_FREE_LIMIT - req.user.dailyShuffleCount),
+  });
+});
+
+router.get('/soulmate/status', authRequired, async (req, res) => {
+  const now = new Date();
+  const last = req.user.lastSoulmateResetAt ? new Date(req.user.lastSoulmateResetAt) : new Date(0);
+  const isSameDay =
+    last.getUTCFullYear() === now.getUTCFullYear() &&
+    last.getUTCMonth() === now.getUTCMonth() &&
+    last.getUTCDate() === now.getUTCDate();
+  if (!isSameDay) {
+    req.user.dailySoulmateCount = 0;
+    req.user.lastSoulmateResetAt = now;
+    await req.user.save();
+  }
+  res.json({
+    isPlus: isPlus(req.user),
+    used: req.user.dailySoulmateCount,
+    limit: isPlus(req.user) ? null : DAILY_SOULMATE_LIMIT,
+    remaining: isPlus(req.user) ? null : Math.max(0, DAILY_SOULMATE_LIMIT - req.user.dailySoulmateCount),
   });
 });
 

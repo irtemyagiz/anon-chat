@@ -16,8 +16,8 @@ function isFlagged(text) {
 function initChatHandler(io, socket) {
   const user = socket.data.user;
 
-  socket.on('chat:message', async ({ content } = {}) => {
-    const roomId = socket.data.roomId;
+  socket.on('chat:message', async ({ content, roomId: incomingRoomId } = {}) => {
+    const roomId = incomingRoomId || socket.data.roomId;
     if (!roomId) return socket.emit('chat:error', { error: 'no_room' });
     if (typeof content !== 'string') return socket.emit('chat:error', { error: 'invalid_content' });
     const trimmed = content.trim().slice(0, 1000);
@@ -32,6 +32,8 @@ function initChatHandler(io, socket) {
         content: trimmed,
         flagged,
       });
+
+      socket.data.roomId = roomId;
 
       socket.to(roomId).emit('chat:message', {
         id: msg.id,
