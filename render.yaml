@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: anon-chat-api
+    runtime: node
+    rootDir: server
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 30d
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 60000
+      - key: RATE_LIMIT_MAX
+        value: 120
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: anon-chat-db
+          property: connectionString
+    autoDeploy: true
+
+databases:
+  - name: anon-chat-db
+    plan: free
+    databaseName: anonchat
+    user: anonchat
+    region: oregon
