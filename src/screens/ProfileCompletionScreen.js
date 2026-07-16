@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { AVATAR_STYLES, DEFAULT_AVATAR_STYLE, default as Avatar } from '../components/Avatar';
+import Avatar, { AVATAR_STYLES, defaultStyleForGender } from '../components/Avatar';
 import { COLORS, RADIUS } from '../config';
 import { useInterests } from '../store/InterestsContext';
 import { useAuth } from '../store/AuthContext';
@@ -10,7 +10,6 @@ import { useAuth } from '../store/AuthContext';
 const GENDERS = [
   { id: 'male', label: 'Erkek', emoji: '👨' },
   { id: 'female', label: 'Kadın', emoji: '👩' },
-  { id: 'other', label: 'Diğer', emoji: '🧑' },
 ];
 
 export default function ProfileCompletionScreen() {
@@ -24,7 +23,9 @@ export default function ProfileCompletionScreen() {
   const [gender, setGender] = useState(user?.gender || null);
   const [age, setAge] = useState(user?.age ? String(user.age) : '');
   const [nickname, setNickname] = useState(user?.nickname || '');
-  const [avatarStyle, setAvatarStyle] = useState(user?.avatarStyle || DEFAULT_AVATAR_STYLE);
+  const [avatarStyle, setAvatarStyle] = useState(
+    user?.avatarStyle || defaultStyleForGender(user?.gender)
+  );
   const [anonymityEnabled, setAnonymityEnabled] = useState(user?.anonymityEnabled ?? true);
   const [selectedInterests, setSelectedInterests] = useState(
     Array.isArray(user?.interestIds) ? user.interestIds : []
@@ -63,6 +64,19 @@ export default function ProfileCompletionScreen() {
     } catch (err) {
       console.warn('[imagePicker]', err);
       setError('Fotoğraf seçilemedi');
+    }
+  };
+
+  const selectGender = (g) => {
+    if (gender === g) {
+      setGender(null);
+      return;
+    }
+    setGender(g);
+    const autoStyle = defaultStyleForGender(g);
+    const currentIsGenderSpecific = avatarStyle === 'avataaars' || avatarStyle === 'lorelei';
+    if (!currentIsGenderSpecific || avatarStyle === defaultStyleForGender(gender)) {
+      setAvatarStyle(autoStyle);
     }
   };
 
@@ -117,6 +131,12 @@ export default function ProfileCompletionScreen() {
     );
   }
 
+  const visibleStyles = AVATAR_STYLES.filter(
+    (s) => s.gender === 'any' || s.gender === gender || !gender
+  );
+  const genderSpecificStyles = visibleStyles.filter((s) => s.gender !== 'any');
+  const neutralStyles = visibleStyles.filter((s) => s.gender === 'any');
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.photoSection}>
@@ -136,9 +156,23 @@ export default function ProfileCompletionScreen() {
         )}
       </View>
 
-      <Text style={styles.label}>Avatar Stili</Text>
+      <Text style={styles.label}>Cinsiyet</Text>
+      <View style={styles.genderRow}>
+        {GENDERS.map((g) => (
+          <Pressable
+            key={g.id}
+            style={[styles.genderBtn, gender === g.id && styles.genderBtnActive]}
+            onPress={() => selectGender(g.id)}
+          >
+            <Text style={styles.genderEmoji}>{g.emoji}</Text>
+            <Text style={[styles.genderLabel, gender === g.id && styles.genderLabelActive]}>{g.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Text style={styles.label}>Avatar Stili {gender && `(${gender === 'female' ? 'kadın' : 'erkek'} için önerilenler üstte)`}</Text>
       <View style={styles.styleGrid}>
-        {AVATAR_STYLES.map((s) => (
+        {[...genderSpecificStyles, ...neutralStyles].map((s) => (
           <Pressable
             key={s.id}
             style={[styles.styleCard, avatarStyle === s.id && styles.styleCardActive]}
@@ -177,20 +211,6 @@ export default function ProfileCompletionScreen() {
         keyboardType="number-pad"
       />
 
-      <Text style={styles.label}>Cinsiyet (opsiyonel)</Text>
-      <View style={styles.genderRow}>
-        {GENDERS.map((g) => (
-          <Pressable
-            key={g.id}
-            style={[styles.genderBtn, gender === g.id && styles.genderBtnActive]}
-            onPress={() => setGender(gender === g.id ? null : g.id)}
-          >
-            <Text style={styles.genderEmoji}>{g.emoji}</Text>
-            <Text style={[styles.genderLabel, gender === g.id && styles.genderLabelActive]}>{g.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-
       <Text style={styles.label}>İlgi alanların</Text>
       <View style={styles.interestGrid}>
         {interests.map((it) => {
@@ -210,8 +230,8 @@ export default function ProfileCompletionScreen() {
 
       <View style={styles.switchRow}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.switchLabel}>Anonim Mod</Text>
-          <Text style={styles.switchHint}>Açıkken sohbette rumuzun + avatarın görünür. Fotoğrafın gizli kalır.</Text>
+          <Text style={styles.switchLabel}>Anonim Mod (varsayılan)</Text>
+          <Text style={styles.switchHint}>Sohbetlerde kimliğini gizler. Sohbet içinde karşındakine özel olarak açabilirsin.</Text>
         </View>
         <Switch
           value={anonymityEnabled}

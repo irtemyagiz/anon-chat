@@ -12,12 +12,16 @@ import ProfileCompletionScreen from '../screens/ProfileCompletionScreen';
 import ShuffleScreen from '../screens/ShuffleScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import PlusScreen from '../screens/PlusScreen';
 
 import ChatScreen from '../screens/ChatScreen';
 import MatchingScreen from '../screens/MatchingScreen';
 import PostChatScreen from '../screens/PostChatScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import PaywallScreen from '../screens/PaywallScreen';
+
+import AdminLoginScreen from '../screens/AdminLoginScreen';
+import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 
 const AuthStack = createNativeStackNavigator();
 const MainTabs = createBottomTabNavigator();
@@ -56,14 +60,18 @@ function AuthFlow() {
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />
-      <AuthStack.Screen name="ProfileCompletion" component={ProfileCompletionScreen} options={{ headerShown: true, title: 'Profil', headerStyle: { backgroundColor: COLORS.bg }, headerTintColor: COLORS.textPrimary }} />
+      <AuthStack.Screen
+        name="ProfileCompletion"
+        component={ProfileCompletionScreen}
+        options={{ headerShown: true, title: 'Profil', headerStyle: { backgroundColor: COLORS.bg }, headerTintColor: COLORS.textPrimary }}
+      />
     </AuthStack.Navigator>
   );
 }
 
 function TabIcon({ emoji, focused }) {
   return (
-    <Text style={{ fontSize: focused ? 24 : 20, opacity: focused ? 1 : 0.55 }}>{emoji}</Text>
+    <Text style={{ fontSize: focused ? 22 : 18, opacity: focused ? 1 : 0.6 }}>{emoji}</Text>
   );
 }
 
@@ -72,7 +80,14 @@ function MainFlow() {
     <MainTabs.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: COLORS.surface, borderTopColor: COLORS.border, height: 64, paddingTop: 8, paddingBottom: 8 },
+        tabBarStyle: {
+          backgroundColor: COLORS.surface,
+          borderTopColor: COLORS.border,
+          borderTopWidth: 1,
+          height: 76,
+          paddingBottom: 18,
+          paddingTop: 8,
+        },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textMuted,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
@@ -86,7 +101,16 @@ function MainFlow() {
       <MainTabs.Screen
         name="FriendsTab"
         component={FriendsScreen}
-        options={{ title: 'Arkadaşlar', tabBarIcon: ({ focused }) => <TabIcon emoji="👥" focused={focused} /> }}
+        options={{ title: 'Sosyal', tabBarIcon: ({ focused }) => <TabIcon emoji="👥" focused={focused} /> }}
+      />
+      <MainTabs.Screen
+        name="PlusTab"
+        component={PlusScreen}
+        options={{
+          title: 'Plus',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="⚡" focused={focused} />,
+          tabBarBadgeStyle: { backgroundColor: '#FFD700', color: '#000', fontWeight: '900' },
+        }}
       />
       <MainTabs.Screen
         name="ProfileTab"
@@ -120,6 +144,8 @@ export default function AppNavigator() {
             <RootStack.Screen name="PostChat" component={PostChatScreen} options={{ title: '' }} />
             <RootStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: '' }} />
             <RootStack.Screen name="Paywall" component={PaywallScreen} options={{ title: 'Plus' }} />
+            <RootStack.Screen name="AdminLogin" component={AdminLoginScreen} options={{ headerShown: false }} />
+            <RootStack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ headerShown: false }} />
           </>
         )}
       </RootStack.Navigator>

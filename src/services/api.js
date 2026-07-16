@@ -64,6 +64,12 @@ export const api = {
 
   follow: (id) => request(`/api/users/${id}/follow`, { method: 'POST' }),
   unfollow: (id) => request(`/api/users/${id}/follow`, { method: 'DELETE' }),
+  acceptFollow: (id) => request(`/api/users/${id}/follow/accept`, { method: 'POST' }),
+  rejectFollow: (id) => request(`/api/users/${id}/follow/reject`, { method: 'POST' }),
+  getFollowRequests: () => request('/api/users/me/requests/incoming'),
+  getMyFollowers: () => request('/api/users/me/followers'),
+  getMyFollowing: () => request('/api/users/me/following'),
+  getMyPendingOutgoing: () => request('/api/users/me/pending-outgoing'),
   getFollowers: (id) => request(`/api/users/${id}/followers`),
   getFollowing: (id) => request(`/api/users/${id}/following`),
 
@@ -72,7 +78,8 @@ export const api = {
     return request(`/api/shuffle/next${qs ? `?${qs}` : ''}`);
   },
   shuffleStatus: () => request('/api/shuffle/status'),
-  upgradePlus: () => request('/api/shuffle/upgrade', { method: 'POST' }),
+  plusInfo: () => request('/api/shuffle/plus/info'),
+  upgradePlus: (tier = '1m') => request('/api/shuffle/upgrade', { method: 'POST', body: { tier } }),
   downgradePlus: () => request('/api/shuffle/downgrade', { method: 'POST' }),
 
   getFriends: () => request('/api/friends'),
@@ -87,4 +94,16 @@ export const api = {
     }),
   getPhoto: (id) => request(`/api/photos/${id}`),
   listPhotos: () => request('/api/photos/inbox/list'),
+
+  adminLogin: (email, password) =>
+    request('/api/admin/login', { method: 'POST', body: { email, password } }),
+  adminStats: () => request('/api/admin/stats'),
+  adminUsers: (params) => {
+    const qs = new URLSearchParams(params || {}).toString();
+    return request(`/api/admin/users${qs ? `?${qs}` : ''}`);
+  },
+  adminGetUser: (id) => request(`/api/admin/users/${id}`),
+  adminPatchUser: (id, patch) =>
+    request(`/api/admin/users/${id}`, { method: 'PATCH', body: patch }),
+  adminDeleteUser: (id) => request(`/api/admin/users/${id}`, { method: 'DELETE' }),
 };

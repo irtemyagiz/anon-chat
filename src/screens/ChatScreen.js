@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -15,6 +16,7 @@ import { COLORS, MESSAGE_MAX_LENGTH, RADIUS } from '../config';
 import { ChatProvider, useChat } from '../store/ChatContext';
 import { MatchProvider, useMatch } from '../store/MatchContext';
 import { useAuth } from '../store/AuthContext';
+import { getSocket } from '../services/socket';
 
 function MessageBubble({ item, isMine }) {
   return (
@@ -32,11 +34,28 @@ function MessageBubble({ item, isMine }) {
 function ChatInner() {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { peer, roomId, leave, next } = useMatch();
+  const { peer, roomId, leave } = useMatch();
   const { messages, peerTyping, send, setTyping, report } = useChat();
   const [text, setText] = useState('');
+  const [revealed, setRevealed] = useState(false);
+  const [revealedPeer, setRevealedPeer] = useState(null);
+  const [showRevealModal, setShowRevealModal] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const listRef = useRef(null);
   const typingTimer = useRef(null);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const onRevealed = (payload) => {
+      setRevealed(true);
+      setRevealedPeer(payload.user);
+    };
+    socket.on('chat:revealed', onRevealed);
+    return () => {
+      socket.off('chat:revealed', onRevealed);
+    };
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
@@ -64,15 +83,29 @@ function ChatInner() {
   };
 
   const handleReport = () => {
+    setShowMenu(false);
     report('inappropriate');
     navigation.replace('PostChat', { reason: 'reported', peer });
   };
+
+  const toggleReveal = () => {
+    const socket = getSocket();
+    if (!socket || !roomId) return;
+    const next = !revealed;
+    socket.emit('chat:reveal', { reveal: next });
+    setRevealed(next);
+    setShowRevealModal(false);
+  };
+
+  const showRealName = revealed || !user?.anonymityEnabled;
+  const displayPeer = revealedPeer
+    ? { ...peer, ...revealedPeer }
+    : peer;
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <View style={styles.header}>
         <Pressable onPress={handleLeave} style={styles.headerBtn}>
@@ -80,21 +113,31 @@ function ChatInner() {
         </Pressable>
         <View style={styles.headerCenter}>
           <Avatar
-            seed={peer?.id || peer?.avatarSeed || peer?.nickname || 'peer'}
+            seed={displayPeer?.id || displayPeer?.avatarSeed || displayPeer?.nickname || 'peer'}
             size={36}
-            avatarStyle={peer?.avatarStyle}
-            photoUrl={peer?.photoUrl}
+            avatarStyle={displayPeer?.avatarStyle}
+            photoUrl={revealed && displayPeer?.photoUrl ? displayPeer.photoUrl : null}
+            isPlus={!!displayPeer?.isPlus}
           />
           <View>
-            <Text style={styles.peerName}>{peer?.nickname || 'Anonim'}</Text>
+            <Text style={styles.peerName}>
+              {showRealName ? displayPeer?.nickname : 'Anonim Kullanıcı'}
+              {displayPeer?.isPlus ? ' ⚡' : ''}
+            </Text>
             <Text style={styles.peerStatus}>
-              {peerTyping ? 'yazıyor...' : 'çevrimiçi'}
+              {peerTyping ? 'yazıyor...' : (showRealName ? `@${displayPeer?.username || 'anonim'}` : 'anonim')}
+              {revealed && showRealName ? ' · ✓ Kimlik açık' : ''}
             </Text>
           </View>
         </View>
-        <Pressable onPress={handleReport} style={styles.headerBtn}>
-          <Text style={styles.headerBtnText}>🚩</Text>
-        </Pressable>
+        <View style={styles.headerRight}>
+          <Pressable onPress={() => setShowRevealModal(true)} style={styles.headerBtn}>
+            <Text style={styles.headerBtnText}>{revealed ? '🔓' : '🔒'}</Text>
+          </Pressable>
+          <Pressable onPress={() => setShowMenu(true)} style={styles.headerBtn}>
+            <Text style={styles.headerBtnText}>⋮</Text>
+          </Pressable>
+        </View>
       </View>
 
       <FlatList
@@ -126,6 +169,42 @@ function ChatInner() {
           <Text style={styles.sendText}>➤</Text>
         </Pressable>
       </View>
+
+      <Modal visible={showRevealModal} transparent animationType="fade" onRequestClose={() => setShowRevealModal(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setShowRevealModal(false)}>
+          <Pressable style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>🔓 Kimlik Göster</Text>
+            <Text style={styles.modalSub}>
+              {revealed
+                ? 'Şu anda kimliğin bu sohbette karşındakine görünür.'
+                : 'Bu sohbette rumuzun yerine "Anonim" görünüyor. Karşındakine gerçek kimliğini göstermek istersen:'}
+            </Text>
+            <Pressable style={[styles.modalBtn, styles.modalBtnPrimary]} onPress={toggleReveal}>
+              <Text style={styles.modalBtnText}>{revealed ? '🔒 Gizle' : '🔓 Kimliğimi Göster'}</Text>
+            </Pressable>
+            <Pressable style={styles.modalBtnClose} onPress={() => setShowRevealModal(false)}>
+              <Text style={styles.modalBtnCloseText}>İptal</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={showMenu} transparent animationType="fade" onRequestClose={() => setShowMenu(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setShowMenu(false)}>
+          <Pressable style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>Sohbet Menüsü</Text>
+            <Pressable style={[styles.modalBtn, styles.modalBtnSecondary]} onPress={handleReport}>
+              <Text style={styles.modalBtnTextDark}>🚩 Bildir</Text>
+            </Pressable>
+            <Pressable style={[styles.modalBtn, styles.modalBtnSecondary]} onPress={handleLeave}>
+              <Text style={styles.modalBtnTextDark}>👋 Sohbetten Ayrıl</Text>
+            </Pressable>
+            <Pressable style={styles.modalBtnClose} onPress={() => setShowMenu(false)}>
+              <Text style={styles.modalBtnCloseText}>İptal</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -146,14 +225,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
     backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  headerBtn: { width: 44, alignItems: 'center' },
-  headerBtnText: { color: COLORS.textPrimary, fontSize: 22 },
+  headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerBtnText: { color: COLORS.textPrimary, fontSize: 20 },
+  headerRight: { flexDirection: 'row' },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   peerName: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700' },
   peerStatus: { color: COLORS.textMuted, fontSize: 11 },
@@ -199,4 +279,23 @@ const styles = StyleSheet.create({
   sendBtnPressed: { backgroundColor: COLORS.primaryPressed, transform: [{ scale: 0.95 }] },
   sendBtnDisabled: { backgroundColor: COLORS.surfaceAlt, opacity: 0.6 },
   sendText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
+  modalSheet: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  modalTitle: { color: COLORS.textPrimary, fontSize: 20, fontWeight: '800', marginBottom: 8, textAlign: 'center' },
+  modalSub: { color: COLORS.textMuted, fontSize: 14, textAlign: 'center', marginBottom: 20, lineHeight: 20 },
+  modalBtn: { paddingVertical: 16, borderRadius: RADIUS.md, alignItems: 'center', marginTop: 10 },
+  modalBtnPrimary: { backgroundColor: COLORS.primary },
+  modalBtnSecondary: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border },
+  modalBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+  modalBtnTextDark: { color: COLORS.textPrimary, fontWeight: '700', fontSize: 15 },
+  modalBtnClose: { paddingVertical: 12, alignItems: 'center', marginTop: 6 },
+  modalBtnCloseText: { color: COLORS.textMuted, fontWeight: '700' },
 });

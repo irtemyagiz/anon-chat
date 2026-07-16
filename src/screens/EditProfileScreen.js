@@ -1,7 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import Avatar, { AVATAR_STYLES, DEFAULT_AVATAR_STYLE } from '../components/Avatar';
+import * as ImagePicker from 'expo-image-picker';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import Avatar, { AVATAR_STYLES, defaultStyleForGender } from '../components/Avatar';
 import { COLORS, RADIUS } from '../config';
 import { useAuth } from '../store/AuthContext';
 import { useInterests } from '../store/InterestsContext';
@@ -11,17 +12,47 @@ export default function EditProfileScreen() {
   const { user, updateUser, logout } = useAuth();
   const { interests } = useInterests();
   const [bio, setBio] = useState(user?.bio || '');
+  const [photoBase64, setPhotoBase64] = useState(user?.photoBase64 || null);
+  const [photoUri, setPhotoUri] = useState(user?.photoUrl || null);
   const [anonymityEnabled, setAnonymityEnabled] = useState(user?.anonymityEnabled ?? true);
-  const [avatarStyle, setAvatarStyle] = useState(user?.avatarStyle || DEFAULT_AVATAR_STYLE);
+  const [avatarStyle, setAvatarStyle] = useState(user?.avatarStyle || defaultStyleForGender(user?.gender));
   const [selectedInterests, setSelectedInterests] = useState(
     Array.isArray(user?.interestIds) ? user.interestIds : []
   );
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({ title: 'Profili Düzenle' });
   }, [navigation]);
+
+  const pickPhoto = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return;
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+        base64: true,
+      });
+      if (!res.canceled && res.assets && res.assets[0]) {
+        const a = res.assets[0];
+        if (a.base64 && a.base64.length > 2_800_000) return;
+        setPhotoBase64(a.base64);
+        setPhotoUri(a.uri);
+      }
+    } catch (err) {
+      console.warn('[imagePicker]', err);
+    }
+  };
+
+  const removePhoto = () => {
+    setPhotoBase64(null);
+    setPhotoUri(null);
+  };
 
   const toggleInterest = (id) => {
     setSelectedInterests((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
@@ -31,12 +62,16 @@ export default function EditProfileScreen() {
     if (saving) return;
     setSaving(true);
     try {
-      await updateUser({
+      const patch = {
         bio: bio.trim() || null,
         anonymityEnabled,
         avatarStyle,
         interestIds: selectedInterests,
-      });
+      };
+      if (photoBase64 !== user?.photoBase64) {
+        patch.photoBase64 = photoBase64 || null;
+      }
+      await updateUser(patch);
       setSavedAt(Date.now());
     } catch (err) {
       console.warn('[save]', err);
@@ -49,22 +84,42 @@ export default function EditProfileScreen() {
     await logout();
   };
 
+  const visibleStyles = AVATAR_STYLES.filter(
+    (s) => s.gender === 'any' || s.gender === user?.gender || !user?.gender
+  );
+  const genderSpecific = visibleStyles.filter((s) => s.gender !== 'any');
+  const neutral = visibleStyles.filter((s) => s.gender === 'any');
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Avatar
-          seed={user?.id || user?.avatarSeed}
-          size={90}
-          avatarStyle={avatarStyle}
-          photoUrl={user?.photoUrl}
-        />
+        <View style={styles.photoWrap}>
+          {uploadingPhoto && <ActivityIndicator size="small" color={COLORS.primary} style={{ position: 'absolute', zIndex: 2 }} />}
+          <Avatar
+            seed={user?.id || user?.avatarSeed}
+            size={90}
+            avatarStyle={avatarStyle}
+            photoUrl={photoUri}
+            isPlus={!!user?.isPlus}
+          />
+        </View>
         <Text style={styles.name}>{user?.nickname}</Text>
         {user?.username && <Text style={styles.username}>@{user?.username}</Text>}
+        <View style={styles.photoActions}>
+          <Pressable style={styles.photoBtn} onPress={pickPhoto}>
+            <Text style={styles.photoBtnText}>{photoUri ? '📷 Fotoğrafı Değiştir' : '📷 Fotoğraf Ekle'}</Text>
+          </Pressable>
+          {photoUri && (
+            <Pressable style={styles.removeBtn} onPress={removePhoto}>
+              <Text style={styles.removeBtnText}>× Kaldır</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
 
       <Text style={styles.label}>Avatar Stili</Text>
       <View style={styles.styleGrid}>
-        {AVATAR_STYLES.map((s) => (
+        {[...genderSpecific, ...neutral].map((s) => (
           <Pressable
             key={s.id}
             style={[styles.styleCard, avatarStyle === s.id && styles.styleCardActive]}
@@ -109,8 +164,8 @@ export default function EditProfileScreen() {
 
       <View style={styles.switchRow}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.switchLabel}>Anonim Mod</Text>
-          <Text style={styles.switchHint}>Açıkken sohbette rumuzun görünür, fotoğrafın gizli.</Text>
+          <Text style={styles.switchLabel}>Anonim Mod (varsayılan)</Text>
+          <Text style={styles.switchHint}>Açıkken sohbette rumuzun görünür. Sohbet içinde özel olarak açabilirsin.</Text>
         </View>
         <Switch
           value={anonymityEnabled}
@@ -130,14 +185,15 @@ export default function EditProfileScreen() {
 
       {savedAt && <Text style={styles.savedHint}>✓ Kaydedildi</Text>}
 
-      {!user?.isPlus && (
-        <Pressable style={styles.upgradeBtn} onPress={() => navigation.navigate('Paywall')}>
-          <Text style={styles.upgradeText}>⚡ Plus'a Geç</Text>
-        </Pressable>
-      )}
-
       <Pressable onPress={onLogout} style={styles.logoutBtn}>
         <Text style={styles.logoutText}>Çıkış Yap</Text>
+      </Pressable>
+
+      <Pressable
+        style={styles.adminBtn}
+        onPress={() => navigation.navigate('AdminLogin')}
+      >
+        <Text style={styles.adminBtnText}>🔒 Admin Paneli</Text>
       </Pressable>
     </ScrollView>
   );
@@ -147,8 +203,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   content: { padding: 20, paddingBottom: 60 },
   header: { alignItems: 'center', marginVertical: 16 },
+  photoWrap: { marginBottom: 8 },
   name: { color: COLORS.textPrimary, fontSize: 20, fontWeight: '800', marginTop: 12 },
   username: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
+  photoActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  photoBtn: { backgroundColor: COLORS.surface, paddingHorizontal: 14, paddingVertical: 8, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.border },
+  photoBtnText: { color: COLORS.textPrimary, fontSize: 12, fontWeight: '700' },
+  removeBtn: { backgroundColor: COLORS.surface, paddingHorizontal: 14, paddingVertical: 8, borderRadius: RADIUS.pill, borderWidth: 1, borderColor: COLORS.danger },
+  removeBtnText: { color: COLORS.danger, fontSize: 12, fontWeight: '700' },
   label: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700', marginTop: 18, marginBottom: 8, letterSpacing: 0.5 },
   textarea: {
     backgroundColor: COLORS.surface,
@@ -207,8 +269,16 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.6 },
   saveText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   savedHint: { color: COLORS.success, fontSize: 13, textAlign: 'center', marginTop: 10 },
-  upgradeBtn: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.primary, padding: 14, borderRadius: RADIUS.md, alignItems: 'center', marginTop: 18 },
-  upgradeText: { color: COLORS.primary, fontWeight: '800', fontSize: 15 },
   logoutBtn: { padding: 14, alignItems: 'center', marginTop: 8 },
   logoutText: { color: COLORS.danger, fontWeight: '700' },
+  adminBtn: {
+    marginTop: 18,
+    backgroundColor: COLORS.surface,
+    padding: 14,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  adminBtnText: { color: COLORS.textMuted, fontWeight: '700', fontSize: 13 },
 });
