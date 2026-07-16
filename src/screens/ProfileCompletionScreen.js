@@ -136,9 +136,10 @@ export default function ProfileCompletionScreen() {
       <View style={styles.photoSection}>
         <Pressable onPress={pickPhoto}>
           <Avatar
-            seed={user?.id || user?.avatarSeed || 'pending'}
+            seed={`preview_${avatarStyle}`}
             size={110}
             avatarStyle={avatarStyle}
+            gender={gender}
             photoUrl={photoUri}
           />
         </Pressable>
@@ -174,7 +175,7 @@ export default function ProfileCompletionScreen() {
             style={[styles.styleCard, avatarStyle === s.id && styles.styleCardActive]}
             onPress={() => setAvatarStyle(s.id)}
           >
-            <Avatar seed={`sample_${s.id}`} size={56} gender={gender} />
+            <Avatar seed={`preview_${s.id}`} size={56} avatarStyle={s.id} gender={gender} />
             <Text style={[styles.styleLabel, avatarStyle === s.id && styles.styleLabelActive]}>
               {s.label}
             </Text>

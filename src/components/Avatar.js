@@ -19,47 +19,37 @@ export function defaultStyleForGender(gender) {
   return DEFAULT_AVATAR_STYLE;
 }
 
-const MALE_PARAMS = {
-  facialHairProbability: 80,
-  facialHair: 'beardMajestic',
-};
-
-const FEMALE_STYLES = ['lorelei'];
-const MALE_STYLES = ['avataaars'];
-
-function pickDicebearStyle(label, gender) {
-  if (gender === 'female') {
-    const i = label.charCodeAt(0) % FEMALE_STYLES.length;
-    return FEMALE_STYLES[i];
-  }
-  if (gender === 'male') {
-    const i = label.charCodeAt(0) % MALE_STYLES.length;
-    return MALE_STYLES[i];
-  }
-  return 'adventurer';
-}
-
 export function avatarUrl({ seed, style = DEFAULT_AVATAR_STYLE, gender, size = 200 }) {
   if (!seed) seed = 'anon';
-  const effectiveStyle = pickDicebearStyle(style, gender);
 
-  let url;
+  const params = new URLSearchParams({
+    seed: String(seed),
+    size: String(size),
+  });
+
+  let dicebearStyle = 'micah';
   if (gender === 'female') {
-    url = `https://api.dicebear.com/7.x/${effectiveStyle}/png?seed=${encodeURIComponent(seed)}&size=${size}`;
+    params.set('facialHairProbability', '0');
+    params.set('hairProbability', '80');
   } else if (gender === 'male') {
-    const params = new URLSearchParams({
-      seed,
-      size: String(size),
-      facialHairProbability: String(MALE_PARAMS.facialHairProbability),
-      facialHair: MALE_PARAMS.facialHair,
-    });
-    url = `https://api.dicebear.com/7.x/${effectiveStyle}/png?${params.toString()}`;
+    params.set('facialHairProbability', '70');
+    params.set('facialHair', 'beard01');
   } else {
-    const s = AVATAR_STYLES.find((x) => x.id === style) ? style : DEFAULT_AVATAR_STYLE;
-    const dbStyle = pickDicebearStyle(s, undefined);
-    url = `https://api.dicebear.com/7.x/${dbStyle}/png?seed=${encodeURIComponent(seed)}&size=${size}`;
+    params.set('facialHairProbability', '30');
   }
-  return url;
+
+  const i = style ? style.charCodeAt(0) % 3 : 0;
+  if (gender === 'female') {
+    const styles = ['micah', 'micah', 'micah'];
+    dicebearStyle = styles[i];
+  } else if (gender === 'male') {
+    const styles = ['micah', 'micah', 'micah'];
+    dicebearStyle = styles[i];
+  } else {
+    dicebearStyle = 'micah';
+  }
+
+  return `https://api.dicebear.com/7.x/${dicebearStyle}/png?${params.toString()}`;
 }
 
 export default function Avatar({

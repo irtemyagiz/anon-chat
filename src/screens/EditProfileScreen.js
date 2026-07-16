@@ -92,9 +92,10 @@ export default function EditProfileScreen() {
         <View style={styles.photoWrap}>
           {uploadingPhoto && <ActivityIndicator size="small" color={COLORS.primary} style={{ position: 'absolute', zIndex: 2 }} />}
           <Avatar
-            seed={user?.id || user?.avatarSeed}
+            seed={`preview_${avatarStyle}`}
             size={90}
             avatarStyle={avatarStyle}
+            gender={user?.gender}
             photoUrl={photoUri}
             isPlus={!!user?.isPlus}
           />
@@ -121,7 +122,7 @@ export default function EditProfileScreen() {
             style={[styles.styleCard, avatarStyle === s.id && styles.styleCardActive]}
             onPress={() => setAvatarStyle(s.id)}
           >
-            <Avatar seed={`sample_${s.id}`} size={48} gender={user?.gender} />
+            <Avatar seed={`preview_${s.id}`} size={48} avatarStyle={s.id} gender={user?.gender} />
             <Text style={[styles.styleLabel, avatarStyle === s.id && styles.styleLabelActive]}>
               {s.label}
             </Text>
