@@ -12,6 +12,10 @@ const { setUpSockets } = require('./sockets');
 const authRoutes = require('./routes/auth');
 const interestsRoutes = require('./routes/interests');
 const healthRoutes = require('./routes/health');
+const usersRoutes = require('./routes/users');
+const shuffleRoutes = require('./routes/shuffle');
+const friendsRoutes = require('./routes/friends');
+const photosRoutes = require('./routes/photos');
 
 const app = express();
 const server = http.createServer(app);
@@ -39,8 +43,12 @@ const apiLimiter = rateLimit({
 app.use('/api', apiLimiter);
 
 app.use('/api/health', healthRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes.router);
 app.use('/api/interests', interestsRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/shuffle', shuffleRoutes);
+app.use('/api/friends', friendsRoutes.router);
+app.use('/api/photos', photosRoutes);
 
 app.get('/', (req, res) => {
   res.json({

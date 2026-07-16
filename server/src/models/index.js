@@ -27,4 +27,13 @@ const connectDB = async () => {
   }
 };
 
+require('./User');
+require('./Interest');
+require('./Message');
+require('./Report');
+require('./Ban');
+require('./Follow');
+require('./Friendship');
+require('./Photo');
+
 module.exports = { sequelize, connectDB };

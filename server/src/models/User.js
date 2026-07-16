@@ -9,11 +9,20 @@ const User = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    deviceId: {
-      type: DataTypes.STRING,
-      allowNull: false,
+    email: {
+      type: DataTypes.STRING(120),
+      allowNull: true,
       unique: true,
-      field: 'device_id',
+    },
+    passwordHash: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'password_hash',
+    },
+    username: {
+      type: DataTypes.STRING(30),
+      allowNull: true,
+      unique: true,
     },
     nickname: {
       type: DataTypes.STRING(20),
@@ -29,6 +38,24 @@ const User = sequelize.define(
       defaultValue: () => Math.random().toString(36).slice(2, 10),
       field: 'avatar_seed',
     },
+    photoBase64: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'photo_base64',
+    },
+    bio: {
+      type: DataTypes.STRING(200),
+      allowNull: true,
+    },
+    gender: {
+      type: DataTypes.ENUM('male', 'female', 'other', null),
+      allowNull: true,
+    },
+    age: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: { min: 18, max: 99 },
+    },
     countryCode: {
       type: DataTypes.STRING(2),
       allowNull: true,
@@ -43,6 +70,31 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
       field: 'rules_accepted_at',
+    },
+    anonymityEnabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      field: 'anonymity_enabled',
+    },
+    isPlus: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      field: 'is_plus',
+    },
+    plusExpiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'plus_expires_at',
+    },
+    dailyShuffleCount: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      field: 'daily_shuffle_count',
+    },
+    lastShuffleResetAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      field: 'last_shuffle_reset_at',
     },
     isBanned: {
       type: DataTypes.BOOLEAN,

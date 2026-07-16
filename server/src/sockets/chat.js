@@ -3,6 +3,7 @@ const Report = require('../models/Report');
 const Ban = require('../models/Ban');
 const User = require('../models/User');
 const { Op } = require('sequelize');
+const { recordChat } = require('../routes/friends');
 
 const FLAG_PATTERNS = [
   /\b(küfür|amk|oruspu|got|pezevenk)\b/i,
@@ -54,9 +55,17 @@ function initChatHandler(io, socket) {
 
   socket.on('chat:leave', async () => {
     const roomId = socket.data.roomId;
+    const peerId = socket.data.peerId;
     if (!roomId) return;
     socket.leave(roomId);
     socket.to(roomId).emit('chat:ended', { by: user.id });
+    if (peerId) {
+      try {
+        await recordChat(user.id, peerId);
+      } catch (err) {
+        console.warn('[recordChat]', err.message);
+      }
+    }
     socket.data.roomId = null;
     socket.data.peerId = null;
   });
