@@ -16,6 +16,7 @@ const usersRoutes = require('./routes/users');
 const shuffleRoutes = require('./routes/shuffle');
 const friendsRoutes = require('./routes/friends');
 const photosRoutes = require('./routes/photos');
+const debugRoutes = require('./routes/debug');
 
 const app = express();
 const server = http.createServer(app);
@@ -49,6 +50,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/shuffle', shuffleRoutes);
 app.use('/api/friends', friendsRoutes.router);
 app.use('/api/photos', photosRoutes);
+app.use('/api/debug', debugRoutes);
 
 app.get('/', (req, res) => {
   res.json({
