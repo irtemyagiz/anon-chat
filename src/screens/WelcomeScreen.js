@@ -1,74 +1,38 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '../theme';
+import { useNavigation } from '@react-navigation/native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { COLORS, RADIUS } from '../config';
 
-const FEATURES = [
-  { emoji: '🕶️', title: 'Tamamen Anonim', desc: 'Kayıt yok, kimlik yok, sadece sohbet.' },
-  { emoji: '⚡', title: 'Anlık Eşleşme', desc: 'Saniyeler içinde yeni biriyle tanış.' },
-  { emoji: '🔒', title: 'Güvenli Bağlantı', desc: 'Mesajların uçtan uca korunur.' },
-];
-
-export default function WelcomeScreen({ onStart }) {
-  const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(24)).current;
-  const logoScale = useRef(new Animated.Value(0.6)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 600, useNativeDriver: true }),
-      Animated.timing(slide, {
-        toValue: 0,
-        duration: 600,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.spring(logoScale, { toValue: 1, friction: 5, useNativeDriver: true }),
-    ]).start();
-  }, [fade, slide, logoScale]);
+export default function WelcomeScreen() {
+  const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.topSection, { opacity: fade }]}>
-        <Animated.View style={[styles.logoCircle, { transform: [{ scale: logoScale }] }]}>
+      <View style={styles.top}>
+        <View style={styles.logo}>
           <Text style={styles.logoEmoji}>💬</Text>
-        </Animated.View>
+        </View>
         <View style={styles.badge}>
           <View style={styles.badgeDot} />
-          <Text style={styles.badgeText}>Çevrimiçi: 2.4k+</Text>
+          <Text style={styles.badgeText}>Anonim • Anlık • Özgür</Text>
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.View style={[styles.middleSection, { opacity: fade, transform: [{ translateY: slide }] }]}>
+      <View style={styles.middle}>
         <Text style={styles.title}>Anonim Chat</Text>
         <Text style={styles.subtitle}>Kimliğin gizli, sohbet özgür.</Text>
+      </View>
 
-        <View style={styles.featureList}>
-          {FEATURES.map((f) => (
-            <View key={f.title} style={styles.featureRow}>
-              <Text style={styles.featureEmoji}>{f.emoji}</Text>
-              <View style={styles.featureTextWrap}>
-                <Text style={styles.featureTitle}>{f.title}</Text>
-                <Text style={styles.featureDesc}>{f.desc}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      </Animated.View>
-
-      <Animated.View style={[styles.bottomSection, { opacity: fade }]}>
+      <View style={styles.bottom}>
         <Pressable
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-          onPress={onStart}
-          android_ripple={{ color: '#4338CA' }}
+          onPress={() => navigation.navigate('Rules')}
         >
-          <Text style={styles.buttonText}>Sohbete Başla</Text>
-          <Text style={styles.buttonArrow}>→</Text>
+          <Text style={styles.buttonText}>Başla</Text>
         </Pressable>
-
-        <Text style={styles.footerText}>
-          Başlayarak kullanım koşullarını kabul etmiş olursun.
+        <Text style={styles.footer}>
+          Devam ederek kullanım koşullarını ve 18+ yaş sınırını kabul edersin.
         </Text>
-      </Animated.View>
+      </View>
     </View>
   );
 }
@@ -76,133 +40,74 @@ export default function WelcomeScreen({ onStart }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.lg,
-    paddingTop: 80,
-    paddingBottom: spacing.xl,
+    backgroundColor: COLORS.bg,
+    paddingHorizontal: 24,
+    paddingTop: 100,
+    paddingBottom: 40,
     justifyContent: 'space-between',
   },
-  topSection: {
-    alignItems: 'center',
-  },
-  logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.surface,
+  top: { alignItems: 'center' },
+  logo: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: colors.primary,
-    shadowColor: colors.primary,
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 18,
-    elevation: 8,
+    elevation: 6,
   },
-  logoEmoji: {
-    fontSize: 56,
-  },
+  logoEmoji: { fontSize: 52 },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: radius.pill,
-    marginTop: spacing.md,
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: RADIUS.pill,
+    marginTop: 18,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: COLORS.border,
   },
   badgeDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.success,
-    marginRight: spacing.sm,
+    backgroundColor: COLORS.success,
+    marginRight: 8,
   },
-  badgeText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  middleSection: {
-    alignItems: 'center',
-  },
+  badgeText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' },
+  middle: { alignItems: 'center' },
   title: {
-    ...typography.title,
-    color: colors.textPrimary,
-    marginBottom: spacing.sm + 4,
+    fontSize: 40,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    letterSpacing: 0.5,
   },
   subtitle: {
-    ...typography.subtitle,
-    color: colors.textSecondary,
-    marginBottom: spacing.lg,
-  },
-  featureList: {
-    width: '100%',
-    gap: spacing.md,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  featureEmoji: {
-    fontSize: 26,
-    marginRight: spacing.md,
-  },
-  featureTextWrap: {
-    flex: 1,
-  },
-  featureTitle: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  featureDesc: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  bottomSection: {
-    width: '100%',
-  },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    borderRadius: radius.md + 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  buttonPressed: {
-    backgroundColor: colors.primaryPressed,
-    transform: [{ scale: 0.98 }],
-  },
-  buttonText: {
-    ...typography.button,
-    color: '#FFFFFF',
-  },
-  buttonArrow: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    marginLeft: spacing.sm,
-  },
-  footerText: {
-    color: colors.textDim,
-    ...typography.caption,
+    fontSize: 17,
+    color: COLORS.textSecondary,
+    marginTop: 10,
     textAlign: 'center',
-    marginTop: spacing.md,
+  },
+  bottom: { width: '100%' },
+  button: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  buttonPressed: { backgroundColor: COLORS.primaryPressed, transform: [{ scale: 0.98 }] },
+  buttonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
+  footer: {
+    color: COLORS.textDim,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 16,
   },
 });

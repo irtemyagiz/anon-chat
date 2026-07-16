@@ -1,24 +1,19 @@
 import { StatusBar } from 'expo-status-bar';
-import { Alert, StyleSheet, View } from 'react-native';
-import WelcomeScreen from './src/screens/WelcomeScreen';
-import { colors } from './src/theme';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AuthProvider } from './src/store/AuthContext';
+import { InterestsProvider } from './src/store/InterestsContext';
+import { COLORS } from './src/config';
+import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
-  const handleStart = () => {
-    Alert.alert('Hazır', 'Sohbet ekranı sıradaki adımda bağlanacak.');
-  };
-
   return (
-    <View style={styles.root}>
+    <SafeAreaProvider>
       <StatusBar style="light" />
-      <WelcomeScreen onStart={handleStart} />
-    </View>
+      <AuthProvider>
+        <InterestsProvider>
+          <AppNavigator />
+        </InterestsProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-});
