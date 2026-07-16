@@ -236,7 +236,8 @@ function ChatInner() {
           </Pressable>
         </Pressable>
       </Modal>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
