@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Avatar from '../components/Avatar';
 import { COLORS, MESSAGE_MAX_LENGTH, RADIUS } from '../config';
 import { ChatProvider, useChat } from '../store/ChatContext';
@@ -27,8 +28,9 @@ function MessageBubble({ item, isMine }) {
           {item.content}
         </Text>
         {item.pending ? <Text style={styles.pendingText}>...</Text> : null}
-      </View>
-    </View>
+</View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -130,11 +132,12 @@ function ChatInner() {
     : peer;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={styles.header}>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.header}>
         <Pressable onPress={handleLeave} style={styles.headerBtn}>
           <Text style={styles.headerBtnText}>←</Text>
         </Pressable>
@@ -251,6 +254,7 @@ export default function ChatScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: COLORS.bg },
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: {
     flexDirection: 'row',
