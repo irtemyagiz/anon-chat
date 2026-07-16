@@ -1,0 +1,30 @@
+{
+  "name": "anon-chat-server",
+  "version": "1.0.0",
+  "description": "Anonim chat backend - Express + Socket.IO + Postgres",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "sequelize": "^6.37.3",
+    "pg": "^8.12.0",
+    "pg-hstore": "^2.3.4",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.4.5",
+    "uuid": "^10.0.0",
+    "express-rate-limit": "^7.4.0"
+  },
+  "private": true
+}
