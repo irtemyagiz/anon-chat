@@ -13,6 +13,12 @@ export const AVATAR_STYLES = [
 
 export const DEFAULT_AVATAR_STYLE = 'classic';
 
+export function defaultStyleForGender(gender) {
+  if (gender === 'female') return 'elegant';
+  if (gender === 'male') return 'classic';
+  return DEFAULT_AVATAR_STYLE;
+}
+
 const MALE_PARAMS = {
   facialHairProbability: 80,
   facialHair: 'beardMajestic',
