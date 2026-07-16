@@ -29,6 +29,12 @@ const navTheme = {
   },
 };
 
+const screenOptions = {
+  headerStyle: { backgroundColor: COLORS.surface },
+  headerTintColor: COLORS.textPrimary,
+  contentStyle: { backgroundColor: COLORS.bg },
+};
+
 function Splash() {
   return (
     <View style={styles.splash}>
@@ -45,6 +51,13 @@ function isOnboardingDone(user) {
   return true;
 }
 
+function getInitialMainRoute(user) {
+  if (user && Array.isArray(user.interestIds) && user.interestIds.length > 0) {
+    return 'Home';
+  }
+  return 'InterestsSelect';
+}
+
 export default function AppNavigator() {
   const { bootstrapping, user } = useAuth();
 
@@ -54,30 +67,26 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer theme={navTheme}>
-      <Stack.Navigator
-        screenOptions={{
-          headerStyle: { backgroundColor: COLORS.surface },
-          headerTintColor: COLORS.textPrimary,
-          contentStyle: { backgroundColor: COLORS.bg },
-        }}
-      >
-        {!onboardingDone ? (
-          <>
-            <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Rules" component={RulesScreen} options={{ title: '' }} />
-            <Stack.Screen name="Nickname" component={NicknameScreen} options={{ title: 'Rumuz Seç' }} />
-            <Stack.Screen name="InterestsSelect" component={InterestsSelectScreen} options={{ title: 'İlgi Alanların' }} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Matching" component={MatchingScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="PostChat" component={PostChatScreen} options={{ title: '' }} />
-            <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
-          </>
-        )}
-      </Stack.Navigator>
+      {!onboardingDone ? (
+        <Stack.Navigator key="onboarding" initialRouteName="Welcome" screenOptions={screenOptions}>
+          <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Rules" component={RulesScreen} options={{ title: '' }} />
+          <Stack.Screen name="Nickname" component={NicknameScreen} options={{ title: 'Rumuz Seç' }} />
+        </Stack.Navigator>
+      ) : (
+        <Stack.Navigator
+          key="main"
+          initialRouteName={getInitialMainRoute(user)}
+          screenOptions={screenOptions}
+        >
+          <Stack.Screen name="InterestsSelect" component={InterestsSelectScreen} options={{ title: 'İlgi Alanların' }} />
+          <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Matching" component={MatchingScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="PostChat" component={PostChatScreen} options={{ title: '' }} />
+          <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
+        </Stack.Navigator>
+      )}
     </NavigationContainer>
   );
 }

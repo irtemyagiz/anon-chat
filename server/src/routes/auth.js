@@ -7,6 +7,14 @@ const { authRequired } = require('../middleware/auth');
 
 const router = express.Router();
 
+async function fetchInterestIds(userId) {
+  const rows = await UserInterest.findAll({
+    where: { userId },
+    attributes: ['interestId'],
+  });
+  return rows.map((r) => r.interestId);
+}
+
 router.post('/device', async (req, res) => {
   try {
     const { deviceId } = req.body || {};
@@ -26,10 +34,11 @@ router.post('/device', async (req, res) => {
     user.lastSeenAt = new Date();
     await user.save();
 
+    const interestIds = await fetchInterestIds(user.id);
     const token = signToken({ sub: user.id });
     res.json({
       token,
-      user: publicUser(user),
+      user: publicUser(user, interestIds),
     });
   } catch (err) {
     console.error('[auth/device]', err);
@@ -38,7 +47,8 @@ router.post('/device', async (req, res) => {
 });
 
 router.get('/me', authRequired, async (req, res) => {
-  res.json({ user: publicUser(req.user) });
+  const interestIds = await fetchInterestIds(req.user.id);
+  res.json({ user: publicUser(req.user, interestIds) });
 });
 
 router.put('/me', authRequired, async (req, res) => {
@@ -79,14 +89,15 @@ router.put('/me', authRequired, async (req, res) => {
       }
     }
 
-    res.json({ user: publicUser(req.user) });
+    const finalInterestIds = await fetchInterestIds(req.user.id);
+    res.json({ user: publicUser(req.user, finalInterestIds) });
   } catch (err) {
     console.error('[auth/me PUT]', err);
     res.status(500).json({ error: 'server_error' });
   }
 });
 
-function publicUser(u) {
+function publicUser(u, interestIds = []) {
   return {
     id: u.id,
     nickname: u.nickname,
@@ -96,6 +107,7 @@ function publicUser(u) {
     ageConfirmed: u.ageConfirmed,
     rulesAcceptedAt: u.rulesAcceptedAt,
     totalChats: u.totalChats,
+    interestIds,
   };
 }
 
