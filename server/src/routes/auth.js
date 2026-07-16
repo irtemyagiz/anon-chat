@@ -56,6 +56,8 @@ router.post('/register', async (req, res) => {
       passwordHash,
       username: normalizedUsername,
       nickname: nickname.trim(),
+      ageConfirmed: true,
+      rulesAcceptedAt: new Date(),
     });
 
     const token = signToken({ sub: user.id });

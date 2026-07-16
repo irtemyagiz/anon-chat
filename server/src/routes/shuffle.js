@@ -78,7 +78,6 @@ router.get('/next', authRequired, async (req, res) => {
 
     const where = {
       id: { [Op.notIn]: excluded },
-      ageConfirmed: true,
       isBanned: false,
     };
     if (genderFilter && ['male', 'female', 'other'].includes(genderFilter)) {

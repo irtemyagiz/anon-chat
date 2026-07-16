@@ -21,6 +21,16 @@ const connectDB = async () => {
     console.log('[db] PostgreSQL bağlantısı başarılı');
     await sequelize.sync({ alter: true });
     console.log('[db] Tablolar senkronize edildi');
+    try {
+      const User = require('./User');
+      const [updated] = await User.update(
+        { ageConfirmed: true, rulesAcceptedAt: new Date() },
+        { where: { ageConfirmed: false } }
+      );
+      if (updated > 0) console.log(`[db] ${updated} kullanıcıya ageConfirmed=true set edildi`);
+    } catch (e) {
+      console.warn('[db] ageConfirmed backfill hatası:', e.message);
+    }
   } catch (err) {
     console.error('[db] Bağlantı hatası:', err.message);
     throw err;
