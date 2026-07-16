@@ -32,6 +32,10 @@ const Report = sequelize.define(
       type: DataTypes.STRING(500),
       allowNull: true,
     },
+    reviewed: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     tableName: 'reports',

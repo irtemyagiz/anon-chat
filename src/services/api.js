@@ -98,6 +98,14 @@ export const api = {
   adminLogin: (email, password) =>
     request('/api/admin/login', { method: 'POST', body: { email, password } }),
   adminStats: () => request('/api/admin/stats'),
+  adminReports: (params) => {
+    const qs = new URLSearchParams(params || {}).toString();
+    return request(`/api/admin/reports${qs ? `?${qs}` : ''}`);
+  },
+  adminBanReport: (id) => request(`/api/admin/reports/${id}/ban`, { method: 'POST' }),
+  adminDismissReport: (id) => request(`/api/admin/reports/${id}/dismiss`, { method: 'POST' }),
+  adminRecentMessages: (limit = 5) =>
+    request(`/api/admin/messages/recent?limit=${limit}`),
   adminUsers: (params) => {
     const qs = new URLSearchParams(params || {}).toString();
     return request(`/api/admin/users${qs ? `?${qs}` : ''}`);

@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, RADIUS } from '../config';
 import { api } from '../services/api';
 
@@ -27,7 +28,7 @@ export default function AdminLoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.card}>
         <Text style={styles.title}>🔒 Admin Girişi</Text>
         <Text style={styles.subtitle}>Yönetim paneline erişmek için giriş yap</Text>
@@ -69,7 +70,7 @@ export default function AdminLoginScreen() {
           <Text style={styles.backLink}>← Geri</Text>
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
