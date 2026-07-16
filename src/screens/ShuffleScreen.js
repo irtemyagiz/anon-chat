@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Avatar from '../components/Avatar';
 import { COLORS, RADIUS } from '../config';
 import { api } from '../services/api';
 import { useAuth } from '../store/AuthContext';
@@ -92,13 +93,13 @@ export default function ShuffleScreen() {
       </View>
 
       <View style={styles.card}>
-        {profile.photoUrl ? (
-          <Image source={{ uri: profile.photoUrl }} style={styles.photo} />
-        ) : (
-          <View style={[styles.photo, styles.photoPlaceholder, { backgroundColor: profile.avatarColor }]}>
-            <Text style={styles.photoLetter}>{(profile.nickname || '?').slice(0, 1).toUpperCase()}</Text>
-          </View>
-        )}
+        <Avatar
+          seed={profile.id || profile.avatarSeed}
+          size={200}
+          avatarStyle={profile.avatarStyle}
+          photoUrl={profile.photoUrl}
+          containerStyle={{ alignSelf: 'center' }}
+        />
 
         <View style={styles.cardInfo}>
           <View style={styles.nameRow}>
@@ -110,10 +111,7 @@ export default function ShuffleScreen() {
         </View>
 
         <View style={styles.actionRow}>
-          <Pressable
-            style={[styles.actionBtn, styles.skipBtn]}
-            onPress={loadNext}
-          >
+          <Pressable style={[styles.actionBtn, styles.skipBtn]} onPress={loadNext}>
             <Text style={styles.actionText}>Sıradaki</Text>
           </Pressable>
           <Pressable
@@ -143,17 +141,14 @@ const styles = StyleSheet.create({
   counterNum: { color: COLORS.textPrimary, fontWeight: '800' },
   plusBadge: { backgroundColor: COLORS.primary, paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADIUS.pill },
   plusBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
-  card: { flex: 1, backgroundColor: COLORS.surface, borderRadius: RADIUS.lg, padding: 16, marginVertical: 12, borderWidth: 1, borderColor: COLORS.border },
-  photo: { width: '100%', aspectRatio: 1, borderRadius: RADIUS.md, marginBottom: 14 },
-  photoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  photoLetter: { color: '#FFFFFF', fontSize: 80, fontWeight: '800' },
-  cardInfo: { paddingHorizontal: 4 },
-  nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  card: { flex: 1, backgroundColor: COLORS.surface, borderRadius: RADIUS.lg, padding: 16, marginVertical: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
+  cardInfo: { paddingHorizontal: 4, width: '100%', marginTop: 14 },
+  nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, justifyContent: 'center' },
   name: { color: COLORS.textPrimary, fontSize: 22, fontWeight: '800' },
   age: { color: COLORS.textMuted, fontSize: 18, fontWeight: '600' },
-  username: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
-  bio: { color: COLORS.textPrimary, fontSize: 14, marginTop: 10, lineHeight: 20 },
-  actionRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  username: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2, textAlign: 'center' },
+  bio: { color: COLORS.textPrimary, fontSize: 14, marginTop: 10, lineHeight: 20, textAlign: 'center' },
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 16, width: '100%' },
   actionBtn: { flex: 1, paddingVertical: 14, borderRadius: RADIUS.md, alignItems: 'center' },
   skipBtn: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border },
   chatBtn: { backgroundColor: COLORS.primary },

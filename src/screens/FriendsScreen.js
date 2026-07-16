@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import Avatar from '../components/Avatar';
 import { COLORS, RADIUS } from '../config';
 import { api } from '../services/api';
 
@@ -33,13 +34,12 @@ export default function FriendsScreen() {
 
   const renderFriend = ({ item }) => (
     <Pressable style={styles.row} onPress={() => navigation.navigate('UserProfile', { userId: item.id })}>
-      {item.photoUrl ? (
-        <Image source={{ uri: item.photoUrl }} style={styles.avatar} />
-      ) : (
-        <View style={[styles.avatar, styles.placeholder, { backgroundColor: item.avatarColor }]}>
-          <Text style={styles.avatarLetter}>{(item.nickname || '?').slice(0, 1).toUpperCase()}</Text>
-        </View>
-      )}
+      <Avatar
+        seed={item.id || item.avatarSeed}
+        size={48}
+        avatarStyle={item.avatarStyle}
+        photoUrl={item.photoUrl}
+      />
       <View style={styles.rowInfo}>
         <Text style={styles.rowName}>{item.nickname}</Text>
         <Text style={styles.rowMeta}>{item.mutualChats} karşılıklı sohbet</Text>
@@ -50,13 +50,12 @@ export default function FriendsScreen() {
 
   const renderSuggestion = ({ item }) => (
     <View style={styles.suggestion}>
-      {item.photoUrl ? (
-        <Image source={{ uri: item.photoUrl }} style={styles.suggestAvatar} />
-      ) : (
-        <View style={[styles.suggestAvatar, styles.placeholder, { backgroundColor: item.avatarColor }]}>
-          <Text style={styles.avatarLetter}>{(item.nickname || '?').slice(0, 1).toUpperCase()}</Text>
-        </View>
-      )}
+      <Avatar
+        seed={item.id || item.avatarSeed}
+        size={44}
+        avatarStyle={item.avatarStyle}
+        photoUrl={item.photoUrl}
+      />
       <View style={{ flex: 1 }}>
         <Text style={styles.rowName}>{item.nickname}</Text>
         <Text style={styles.rowMeta}>{item.mutualChats} / {threshold} sohbet</Text>
@@ -164,7 +163,6 @@ const styles = StyleSheet.create({
   avatar: { width: 48, height: 48, borderRadius: 24 },
   suggestAvatar: { width: 44, height: 44, borderRadius: 22 },
   placeholder: { alignItems: 'center', justifyContent: 'center' },
-  avatarLetter: { color: '#FFFFFF', fontWeight: '800', fontSize: 18 },
   rowInfo: { flex: 1 },
   rowName: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700' },
   rowMeta: { color: COLORS.textMuted, fontSize: 12, marginTop: 2 },

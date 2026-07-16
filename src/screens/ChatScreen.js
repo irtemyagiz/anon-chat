@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Avatar from '../components/Avatar';
 import { COLORS, MESSAGE_MAX_LENGTH, RADIUS } from '../config';
 import { ChatProvider, useChat } from '../store/ChatContext';
 import { MatchProvider, useMatch } from '../store/MatchContext';
@@ -78,11 +79,12 @@ function ChatInner() {
           <Text style={styles.headerBtnText}>←</Text>
         </Pressable>
         <View style={styles.headerCenter}>
-          <View style={[styles.peerAvatar, { backgroundColor: peer?.avatarColor || COLORS.primary }]}>
-            <Text style={styles.peerAvatarText}>
-              {(peer?.nickname || '?').slice(0, 1).toUpperCase()}
-            </Text>
-          </View>
+          <Avatar
+            seed={peer?.id || peer?.avatarSeed || peer?.nickname || 'peer'}
+            size={36}
+            avatarStyle={peer?.avatarStyle}
+            photoUrl={peer?.photoUrl}
+          />
           <View>
             <Text style={styles.peerName}>{peer?.nickname || 'Anonim'}</Text>
             <Text style={styles.peerStatus}>
@@ -153,14 +155,6 @@ const styles = StyleSheet.create({
   headerBtn: { width: 44, alignItems: 'center' },
   headerBtnText: { color: COLORS.textPrimary, fontSize: 22 },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  peerAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  peerAvatarText: { color: '#FFFFFF', fontWeight: '800' },
   peerName: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700' },
   peerStatus: { color: COLORS.textMuted, fontSize: 11 },
   listContent: { padding: 16, paddingBottom: 8 },

@@ -1,8 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { AVATAR_COLORS, COLORS, RADIUS } from '../config';
-import { api } from '../services/api';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import Avatar, { AVATAR_STYLES, DEFAULT_AVATAR_STYLE } from '../components/Avatar';
+import { COLORS, RADIUS } from '../config';
 import { useAuth } from '../store/AuthContext';
 import { useInterests } from '../store/InterestsContext';
 
@@ -10,10 +10,9 @@ export default function EditProfileScreen() {
   const navigation = useNavigation();
   const { user, updateUser, logout } = useAuth();
   const { interests } = useInterests();
-  const [photoUrl, setPhotoUrl] = useState(user?.photoUrl || null);
-  const [photoBase64, setPhotoBase64] = useState(null);
   const [bio, setBio] = useState(user?.bio || '');
   const [anonymityEnabled, setAnonymityEnabled] = useState(user?.anonymityEnabled ?? true);
+  const [avatarStyle, setAvatarStyle] = useState(user?.avatarStyle || DEFAULT_AVATAR_STYLE);
   const [selectedInterests, setSelectedInterests] = useState(
     Array.isArray(user?.interestIds) ? user.interestIds : []
   );
@@ -35,8 +34,8 @@ export default function EditProfileScreen() {
       await updateUser({
         bio: bio.trim() || null,
         anonymityEnabled,
+        avatarStyle,
         interestIds: selectedInterests,
-        ...(photoBase64 ? { photoBase64 } : {}),
       });
       setSavedAt(Date.now());
     } catch (err) {
@@ -53,15 +52,30 @@ export default function EditProfileScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, styles.placeholder, { backgroundColor: user?.avatarColor || COLORS.primary }]}>
-            <Text style={styles.avatarLetter}>{(user?.nickname || '?').slice(0, 1).toUpperCase()}</Text>
-          </View>
-        )}
+        <Avatar
+          seed={user?.id || user?.avatarSeed}
+          size={90}
+          avatarStyle={avatarStyle}
+          photoUrl={user?.photoUrl}
+        />
         <Text style={styles.name}>{user?.nickname}</Text>
         {user?.username && <Text style={styles.username}>@{user?.username}</Text>}
+      </View>
+
+      <Text style={styles.label}>Avatar Stili</Text>
+      <View style={styles.styleGrid}>
+        {AVATAR_STYLES.map((s) => (
+          <Pressable
+            key={s.id}
+            style={[styles.styleCard, avatarStyle === s.id && styles.styleCardActive]}
+            onPress={() => setAvatarStyle(s.id)}
+          >
+            <Avatar seed={user?.id || 'me'} size={48} avatarStyle={s.id} />
+            <Text style={[styles.styleLabel, avatarStyle === s.id && styles.styleLabelActive]}>
+              {s.label}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       <Text style={styles.label}>Bio</Text>
@@ -133,10 +147,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   content: { padding: 20, paddingBottom: 60 },
   header: { alignItems: 'center', marginVertical: 16 },
-  avatar: { width: 90, height: 90, borderRadius: 45, marginBottom: 12 },
-  placeholder: { alignItems: 'center', justifyContent: 'center' },
-  avatarLetter: { color: '#FFFFFF', fontSize: 38, fontWeight: '800' },
-  name: { color: COLORS.textPrimary, fontSize: 20, fontWeight: '800' },
+  name: { color: COLORS.textPrimary, fontSize: 20, fontWeight: '800', marginTop: 12 },
   username: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
   label: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700', marginTop: 18, marginBottom: 8, letterSpacing: 0.5 },
   textarea: {
@@ -151,6 +162,19 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   hint: { color: COLORS.textDim, fontSize: 11, marginTop: 4, textAlign: 'right' },
+  styleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  styleCard: {
+    width: 70,
+    paddingVertical: 8,
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+  },
+  styleCardActive: { borderColor: COLORS.primary, backgroundColor: COLORS.surfaceAlt },
+  styleLabel: { color: COLORS.textMuted, fontSize: 10, fontWeight: '700', marginTop: 4 },
+  styleLabelActive: { color: COLORS.primary },
   interestGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: {
     flexDirection: 'row',

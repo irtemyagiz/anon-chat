@@ -1,8 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { AVATAR_COLORS, COLORS, RADIUS } from '../config';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { AVATAR_STYLES, DEFAULT_AVATAR_STYLE, default as Avatar } from '../components/Avatar';
+import { COLORS, RADIUS } from '../config';
 import { useInterests } from '../store/InterestsContext';
 import { useAuth } from '../store/AuthContext';
 
@@ -23,7 +24,7 @@ export default function ProfileCompletionScreen() {
   const [gender, setGender] = useState(user?.gender || null);
   const [age, setAge] = useState(user?.age ? String(user.age) : '');
   const [nickname, setNickname] = useState(user?.nickname || '');
-  const [avatarColor, setAvatarColor] = useState(user?.avatarColor || AVATAR_COLORS[0]);
+  const [avatarStyle, setAvatarStyle] = useState(user?.avatarStyle || DEFAULT_AVATAR_STYLE);
   const [anonymityEnabled, setAnonymityEnabled] = useState(user?.anonymityEnabled ?? true);
   const [selectedInterests, setSelectedInterests] = useState(
     Array.isArray(user?.interestIds) ? user.interestIds : []
@@ -91,7 +92,7 @@ export default function ProfileCompletionScreen() {
     try {
       await updateUser({
         nickname: nickname.trim(),
-        avatarColor,
+        avatarStyle,
         bio: bio.trim() || null,
         gender: gender || null,
         age: age ? parseInt(age, 10) : null,
@@ -119,32 +120,40 @@ export default function ProfileCompletionScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.photoSection}>
-        <Pressable style={styles.photoWrap} onPress={pickPhoto}>
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.photo} />
-          ) : (
-            <View style={[styles.photoPlaceholder, { backgroundColor: avatarColor }]}>
-              <Text style={styles.photoLetter}>{(nickname || '?').slice(0, 1).toUpperCase()}</Text>
-              <Text style={styles.photoAdd}>+ Foto</Text>
-            </View>
-          )}
+        <Pressable onPress={pickPhoto}>
+          <Avatar
+            seed={user?.id || user?.avatarSeed || 'pending'}
+            size={110}
+            avatarStyle={avatarStyle}
+            photoUrl={photoUri}
+          />
         </Pressable>
-        <Text style={styles.hint}>İsteğe bağlı. Eklenmezse rumuzun görünür.</Text>
+        <Text style={styles.photoHint}>Fotoğraf seçmek için dokun (opsiyonel)</Text>
+        {photoUri && (
+          <Pressable onPress={() => { setPhotoBase64(null); setPhotoUri(null); }}>
+            <Text style={styles.removePhoto}>× Fotoğrafı kaldır</Text>
+          </Pressable>
+        )}
+      </View>
+
+      <Text style={styles.label}>Avatar Stili</Text>
+      <View style={styles.styleGrid}>
+        {AVATAR_STYLES.map((s) => (
+          <Pressable
+            key={s.id}
+            style={[styles.styleCard, avatarStyle === s.id && styles.styleCardActive]}
+            onPress={() => setAvatarStyle(s.id)}
+          >
+            <Avatar seed={user?.id || 'sample'} size={56} avatarStyle={s.id} />
+            <Text style={[styles.styleLabel, avatarStyle === s.id && styles.styleLabelActive]}>
+              {s.label}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       <Text style={styles.label}>Rumuz</Text>
       <TextInput style={styles.input} value={nickname} onChangeText={setNickname} maxLength={20} placeholder="Görünür isim" placeholderTextColor={COLORS.textDim} />
-
-      <Text style={styles.label}>Avatar rengi (fotoğraf yoksa)</Text>
-      <View style={styles.colorRow}>
-        {AVATAR_COLORS.map((c) => (
-          <Pressable
-            key={c}
-            style={[styles.colorDot, { backgroundColor: c }, avatarColor === c && styles.colorDotActive]}
-            onPress={() => setAvatarColor(c)}
-          />
-        ))}
-      </View>
 
       <Text style={styles.label}>Bio</Text>
       <TextInput
@@ -230,20 +239,8 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 60 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
   photoSection: { alignItems: 'center', marginVertical: 12 },
-  photoWrap: { width: 110, height: 110, borderRadius: 55, overflow: 'hidden' },
-  photo: { width: 110, height: 110 },
-  photoPlaceholder: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.border,
-  },
-  photoLetter: { color: '#FFFFFF', fontSize: 40, fontWeight: '800' },
-  photoAdd: { color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '700', marginTop: 2 },
-  hint: { color: COLORS.textDim, fontSize: 11, marginTop: 6, textAlign: 'center' },
+  photoHint: { color: COLORS.textDim, fontSize: 11, marginTop: 10, textAlign: 'center' },
+  removePhoto: { color: COLORS.danger, fontSize: 12, fontWeight: '700', marginTop: 8 },
   label: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700', marginTop: 18, marginBottom: 8, letterSpacing: 0.5 },
   input: {
     backgroundColor: COLORS.surface,
@@ -256,9 +253,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   textarea: { minHeight: 80, textAlignVertical: 'top' },
-  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  colorDot: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'transparent' },
-  colorDotActive: { borderColor: COLORS.textPrimary },
+  hint: { color: COLORS.textDim, fontSize: 11, marginTop: 4, textAlign: 'right' },
+  styleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  styleCard: {
+    width: 80,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+  },
+  styleCardActive: { borderColor: COLORS.primary, backgroundColor: COLORS.surfaceAlt },
+  styleLabel: { color: COLORS.textMuted, fontSize: 11, fontWeight: '700', marginTop: 6 },
+  styleLabelActive: { color: COLORS.primary },
   genderRow: { flexDirection: 'row', gap: 10 },
   genderBtn: {
     flex: 1,

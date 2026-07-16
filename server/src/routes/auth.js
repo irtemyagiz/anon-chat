@@ -133,6 +133,9 @@ router.put('/me', authRequired, async (req, res) => {
       }
       req.user.avatarColor = avatarColor;
     }
+    if (req.body?.avatarStyle !== undefined) {
+      req.user.avatarStyle = String(req.body.avatarStyle).slice(0, 30);
+    }
     if (countryCode !== undefined) {
       req.user.countryCode = countryCode;
     }
@@ -198,6 +201,7 @@ function publicUser(u, interestIds = []) {
     nickname: u.nickname,
     avatarColor: u.avatarColor,
     avatarSeed: u.avatarSeed,
+    avatarStyle: u.avatarStyle || 'adventurer',
     photoUrl: u.photoBase64 ? `data:image/jpeg;base64,${u.photoBase64}` : null,
     bio: u.bio,
     gender: u.gender,

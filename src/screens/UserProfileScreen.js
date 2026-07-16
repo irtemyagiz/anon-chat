@@ -1,6 +1,7 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Avatar from '../components/Avatar';
 import { COLORS, RADIUS } from '../config';
 import { api } from '../services/api';
 import { useAuth } from '../store/AuthContext';
@@ -81,13 +82,13 @@ export default function UserProfileScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        {p.photoUrl ? (
-          <Image source={{ uri: p.photoUrl }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: p.avatarColor }]}>
-            <Text style={styles.avatarLetter}>{(p.nickname || '?').slice(0, 1).toUpperCase()}</Text>
-          </View>
-        )}
+        <Avatar
+          seed={p.id || p.avatarSeed}
+          size={100}
+          avatarStyle={p.avatarStyle}
+          photoUrl={p.photoUrl}
+          containerStyle={{ marginBottom: 12 }}
+        />
         <Text style={styles.name}>{p.nickname}</Text>
         {p.username && <Text style={styles.username}>@{p.username}</Text>}
         {p.bio && <Text style={styles.bio}>{p.bio}</Text>}
@@ -164,17 +165,12 @@ export default function UserProfileScreen() {
   );
 }
 
-import { Alert } from 'react-native';
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   content: { padding: 20 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
   errorText: { color: COLORS.danger, fontSize: 14 },
   header: { alignItems: 'center', paddingVertical: 16 },
-  avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 12 },
-  avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  avatarLetter: { color: '#FFFFFF', fontSize: 40, fontWeight: '800' },
   name: { color: COLORS.textPrimary, fontSize: 22, fontWeight: '800' },
   username: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
   bio: { color: COLORS.textPrimary, fontSize: 14, marginTop: 12, textAlign: 'center', lineHeight: 20 },

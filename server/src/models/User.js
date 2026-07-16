@@ -38,6 +38,11 @@ const User = sequelize.define(
       defaultValue: () => Math.random().toString(36).slice(2, 10),
       field: 'avatar_seed',
     },
+    avatarStyle: {
+      type: DataTypes.STRING(30),
+      defaultValue: 'adventurer',
+      field: 'avatar_style',
+    },
     photoBase64: {
       type: DataTypes.TEXT,
       allowNull: true,
