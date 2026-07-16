@@ -15,12 +15,10 @@ import Avatar from '../components/Avatar';
 import { COLORS, RADIUS } from '../config';
 import { api } from '../services/api';
 import { useAuth } from '../store/AuthContext';
-import { useMatch } from '../store/MatchContext';
 
 export default function ShuffleScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { setDirect } = useMatch();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
