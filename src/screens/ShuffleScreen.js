@@ -15,10 +15,12 @@ import Avatar from '../components/Avatar';
 import { COLORS, RADIUS } from '../config';
 import { api } from '../services/api';
 import { useAuth } from '../store/AuthContext';
+import { useMatch } from '../store/MatchContext';
 
 export default function ShuffleScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { setDirect } = useMatch();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -26,16 +28,21 @@ export default function ShuffleScreen() {
   const [remaining, setRemaining] = useState(null);
   const [isPlus, setIsPlus] = useState(user?.isPlus || false);
   const [selected, setSelected] = useState(null);
+  const [soulmateInfo, setSoulmateInfo] = useState(null);
 
   const load = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
     else setLoading(true);
     setError(null);
     try {
-      const res = await api.shuffleNext({ limit: '30' });
-      setUsers(res.users || []);
-      setRemaining(res.remaining);
-      setIsPlus(res.isPlus);
+      const [list, sm] = await Promise.all([
+        api.shuffleNext({ limit: '30' }),
+        api.soulmateStatus().catch(() => null),
+      ]);
+      setUsers(list.users || []);
+      setRemaining(list.remaining);
+      setIsPlus(list.isPlus);
+      if (sm) setSoulmateInfo(sm);
     } catch (err) {
       if (err.message === 'daily_limit_reached') {
         setError('limit');
@@ -80,6 +87,17 @@ export default function ShuffleScreen() {
     </Pressable>
   );
 
+  const openDirectChat = async (peer) => {
+    setSelected(null);
+    try {
+      const res = await api.directChat(peer.id);
+      setDirect(res.roomId, res.peer);
+      navigation.navigate('Chat', { peer: res.peer, roomId: res.roomId });
+    } catch (err) {
+      console.warn('[directChat]', err);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
@@ -89,6 +107,27 @@ export default function ShuffleScreen() {
             <Text style={styles.refreshIconText}>🔄</Text>
           </Pressable>
         </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.soulmateCard, pressed && styles.soulmatePressed]}
+          onPress={() => navigation.navigate('SoulmateMatching')}
+        >
+          <View style={styles.soulmateLeft}>
+            <Text style={styles.soulmateEmoji}>💫</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.soulmateTitle}>Ruh Eşini Ara</Text>
+              <Text style={styles.soulmateSub}>
+                {isPlus || (soulmateInfo && soulmateInfo.isPlus)
+                  ? '⚡ Sınırsız eşleşme'
+                  : soulmateInfo
+                    ? `Bugün ${soulmateInfo.remaining}/5 hakkın kaldı`
+                    : 'Anonim, rastgele, anlık'}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.soulmateArrow}>→</Text>
+        </Pressable>
+
         <View style={styles.metaRow}>
           {!isPlus && remaining !== null && (
             <View style={styles.metaPill}>
@@ -108,13 +147,13 @@ export default function ShuffleScreen() {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.centerSub}>Kullanıcılar aranıyor...</Text>
+          <Text style={styles.centerSub}>Kullanıcılar yükleniyor...</Text>
         </View>
       ) : error === 'limit' ? (
         <View style={styles.center}>
           <Text style={styles.emoji}>⚡</Text>
           <Text style={styles.centerTitle}>Günlük limit doldu</Text>
-          <Text style={styles.centerSub}>Bugün 30 kişi gördün. Yarın tekrar gel!</Text>
+          <Text style={styles.centerSub}>Bugün 25 kişi gördün. Yarın tekrar gel!</Text>
           <Pressable style={styles.cta} onPress={() => navigation.navigate('Paywall')}>
             <Text style={styles.ctaText}>Plus'a Geç</Text>
           </Pressable>
@@ -170,13 +209,7 @@ export default function ShuffleScreen() {
                     {selected.bio && <Text style={styles.modalBio}>{selected.bio}</Text>}
                   </View>
                 </View>
-                <Pressable
-                  style={[styles.modalBtn, styles.modalBtnPrimary]}
-                  onPress={() => {
-                    setSelected(null);
-                    navigation.navigate('Matching', { targetUserId: selected.id, peer: selected });
-                  }}
-                >
+                <Pressable style={[styles.modalBtn, styles.modalBtnPrimary]} onPress={() => openDirectChat(selected)}>
                   <Text style={styles.modalBtnText}>💬 Mesaj Gönder</Text>
                 </Pressable>
                 <Pressable
@@ -216,7 +249,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   refreshIconText: { fontSize: 18 },
-  metaRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  soulmateCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    padding: 14,
+    borderRadius: RADIUS.lg,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#EC4899',
+  },
+  soulmatePressed: { backgroundColor: COLORS.surfaceAlt, transform: [{ scale: 0.98 }] },
+  soulmateLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  soulmateEmoji: { fontSize: 32 },
+  soulmateTitle: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '800' },
+  soulmateSub: { color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
+  soulmateArrow: { color: '#EC4899', fontSize: 22, fontWeight: '800' },
+  metaRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   metaPill: {
     backgroundColor: COLORS.surface,
     paddingHorizontal: 12,
@@ -258,11 +307,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   ctaText: { color: '#FFFFFF', fontWeight: '800', fontSize: 16 },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    justifyContent: 'flex-end',
-  },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
   modalSheet: {
     backgroundColor: COLORS.surface,
     borderTopLeftRadius: 24,
@@ -276,12 +321,7 @@ const styles = StyleSheet.create({
   modalName: { color: COLORS.textPrimary, fontSize: 20, fontWeight: '800' },
   modalUsername: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
   modalBio: { color: COLORS.textPrimary, fontSize: 14, marginTop: 6, lineHeight: 18 },
-  modalBtn: {
-    paddingVertical: 16,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-    marginTop: 10,
-  },
+  modalBtn: { paddingVertical: 16, borderRadius: RADIUS.md, alignItems: 'center', marginTop: 10 },
   modalBtnPrimary: { backgroundColor: COLORS.primary },
   modalBtnSecondary: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border },
   modalBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },

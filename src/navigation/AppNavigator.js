@@ -20,6 +20,7 @@ import MatchingScreen from '../screens/MatchingScreen';
 import PostChatScreen from '../screens/PostChatScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import PaywallScreen from '../screens/PaywallScreen';
+import SoulmateMatchingScreen from '../screens/SoulmateMatchingScreen';
 
 import AdminLoginScreen from '../screens/AdminLoginScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
@@ -146,6 +147,7 @@ export default function AppNavigator() {
           <>
             <RootStack.Screen name="Main" component={MainFlow} options={{ headerShown: false }} />
             <RootStack.Screen name="Matching" component={MatchingScreen} options={{ headerShown: false }} />
+            <RootStack.Screen name="SoulmateMatching" component={SoulmateMatchingScreen} options={{ headerShown: false }} />
             <RootStack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
             <RootStack.Screen name="PostChat" component={PostChatScreen} options={{ title: '' }} />
             <RootStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: '' }} />

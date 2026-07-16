@@ -113,4 +113,7 @@ export const api = {
   deleteChat: (peerId) => request(`/api/chats/${peerId}`, { method: 'DELETE' }),
   markChatRead: (peerId) => request(`/api/chats/${peerId}/read`, { method: 'POST' }),
   syncChat: (peerId, roomId) => request(`/api/chats/sync/${peerId}/${roomId}`, { method: 'POST' }),
+  directChat: (peerId) => request(`/api/chats/direct/${peerId}`, { method: 'POST' }),
+
+  soulmateStatus: () => request('/api/shuffle/soulmate/status'),
 };

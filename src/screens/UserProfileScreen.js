@@ -11,6 +11,16 @@ export default function UserProfileScreen() {
   const route = useRoute();
   const { user } = useAuth();
   const userId = route.params?.userId;
+
+  const openDirectChat = async () => {
+    if (!data) return;
+    try {
+      const res = await api.directChat(data.profile.id);
+      navigation.navigate('Chat', { peer: res.peer, roomId: res.roomId });
+    } catch (err) {
+      Alert.alert('Hata', err.message || 'Mesaj başlatılamadı');
+    }
+  };
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -129,7 +139,7 @@ export default function UserProfileScreen() {
 
           <Pressable
             style={[styles.actionBtn, styles.chatBtn]}
-            onPress={() => navigation.navigate('Matching', { targetUserId: p.id, peer: p })}
+            onPress={openDirectChat}
           >
             <Text style={styles.chatText}>Mesaj Gönder</Text>
           </Pressable>

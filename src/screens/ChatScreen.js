@@ -1,6 +1,7 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -33,8 +34,18 @@ function MessageBubble({ item, isMine }) {
 
 function ChatInner() {
   const navigation = useNavigation();
+  const route = useRoute();
   const { user } = useAuth();
-  const { peer, roomId, leave } = useMatch();
+  const matchContext = useMatch();
+  const peerFromMatch = matchContext.peer;
+  const roomFromMatch = matchContext.roomId;
+  const directPeer = route.params?.peer;
+  const directRoom = route.params?.roomId;
+
+  const peer = directPeer || peerFromMatch;
+  const roomId = directRoom || roomFromMatch;
+  const isDirect = !!directRoom;
+
   const { messages, peerTyping, send, setTyping, report } = useChat();
   const [text, setText] = useState('');
   const [revealed, setRevealed] = useState(false);
@@ -43,19 +54,31 @@ function ChatInner() {
   const [showMenu, setShowMenu] = useState(false);
   const listRef = useRef(null);
   const typingTimer = useRef(null);
+  const [joinedRoom, setJoinedRoom] = useState(false);
 
   useEffect(() => {
+    if (!roomId) return;
+    if (joinedRoom) return;
     const socket = getSocket();
     if (!socket) return;
+
+    socket.emit('chat:join', { roomId });
+    setJoinedRoom(true);
+
+    const onMessage = (msg) => {
+      // messages handled via ChatContext
+    };
     const onRevealed = (payload) => {
       setRevealed(true);
       setRevealedPeer(payload.user);
     };
+    socket.on('chat:message', onMessage);
     socket.on('chat:revealed', onRevealed);
     return () => {
+      socket.off('chat:message', onMessage);
       socket.off('chat:revealed', onRevealed);
     };
-  }, []);
+  }, [roomId, joinedRoom]);
 
   useEffect(() => {
     const t = setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
@@ -78,7 +101,11 @@ function ChatInner() {
   };
 
   const handleLeave = () => {
-    leave();
+    if (isDirect) {
+      navigation.goBack();
+      return;
+    }
+    matchContext.leave();
     navigation.replace('PostChat', { reason: 'left', peer });
   };
 
@@ -125,7 +152,7 @@ function ChatInner() {
               {displayPeer?.isPlus ? ' ⚡' : ''}
             </Text>
             <Text style={styles.peerStatus}>
-              {peerTyping ? 'yazıyor...' : (showRealName ? `@${displayPeer?.username || 'anonim'}` : 'anonim')}
+              {peerTyping ? 'yazıyor...' : (showRealName && displayPeer?.username ? `@${displayPeer.username}` : 'anonim')}
               {revealed && showRealName ? ' · ✓ Kimlik açık' : ''}
             </Text>
           </View>
@@ -134,9 +161,11 @@ function ChatInner() {
           <Pressable onPress={() => setShowRevealModal(true)} style={styles.headerBtn}>
             <Text style={styles.headerBtnText}>{revealed ? '🔓' : '🔒'}</Text>
           </Pressable>
-          <Pressable onPress={() => setShowMenu(true)} style={styles.headerBtn}>
-            <Text style={styles.headerBtnText}>⋮</Text>
-          </Pressable>
+          {!isDirect && (
+            <Pressable onPress={() => setShowMenu(true)} style={styles.headerBtn}>
+              <Text style={styles.headerBtnText}>⋮</Text>
+            </Pressable>
+          )}
         </View>
       </View>
 
@@ -214,7 +243,7 @@ export default function ChatScreen({ route }) {
   const initialPeer = route?.params?.peer;
   return (
     <MatchProvider initialRoomId={initialRoomId} initialPeer={initialPeer}>
-      <ChatProvider>
+      <ChatProvider roomId={initialRoomId}>
         <ChatInner />
       </ChatProvider>
     </MatchProvider>
@@ -270,14 +299,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     fontSize: 15,
   },
-  sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
   sendBtnPressed: { backgroundColor: COLORS.primaryPressed, transform: [{ scale: 0.95 }] },
   sendBtnDisabled: { backgroundColor: COLORS.surfaceAlt, opacity: 0.6 },
   sendText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
