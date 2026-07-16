@@ -194,6 +194,7 @@ router.put('/me', authRequired, async (req, res) => {
 });
 
 function publicUser(u, interestIds = []) {
+  const plusActive = u.isPlus && (!u.plusExpiresAt || new Date(u.plusExpiresAt) > new Date());
   return {
     id: u.id,
     email: u.email,
@@ -210,7 +211,7 @@ function publicUser(u, interestIds = []) {
     ageConfirmed: u.ageConfirmed,
     rulesAcceptedAt: u.rulesAcceptedAt,
     anonymityEnabled: u.anonymityEnabled,
-    isPlus: u.isPlus && (!u.plusExpiresAt || new Date(u.plusExpiresAt) > new Date()),
+    isPlus: plusActive,
     plusExpiresAt: u.plusExpiresAt,
     dailyShuffleCount: u.dailyShuffleCount,
     totalChats: u.totalChats,

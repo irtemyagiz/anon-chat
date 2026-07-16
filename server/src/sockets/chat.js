@@ -68,6 +68,24 @@ function initChatHandler(io, socket) {
     }
     socket.data.roomId = null;
     socket.data.peerId = null;
+    socket.data.revealed = false;
+  });
+
+  socket.on('chat:reveal', async ({ reveal } = {}) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return socket.emit('chat:error', { error: 'no_room' });
+    socket.data.revealed = !!reveal;
+    socket.to(roomId).emit('chat:revealed', {
+      by: user.id,
+      revealed: !!reveal,
+      user: {
+        id: user.id,
+        nickname: user.nickname,
+        username: user.username,
+        photoUrl: user.photoBase64 ? `data:image/jpeg;base64,${user.photoBase64}` : null,
+        avatarStyle: user.avatarStyle,
+      },
+    });
   });
 
   socket.on('chat:report', async ({ reason = 'inappropriate', note } = {}) => {

@@ -6,6 +6,22 @@ const Message = require('../models/Message');
 
 const waitingPool = new Map();
 
+function publicUserLite(u) {
+  return {
+    id: u.id,
+    nickname: u.nickname,
+    username: u.username,
+    avatarColor: u.avatarColor,
+    avatarSeed: u.avatarSeed,
+    avatarStyle: u.avatarStyle || 'adventurer',
+    photoUrl: u.photoBase64 ? `data:image/jpeg;base64,${u.photoBase64}` : null,
+    bio: u.bio,
+    age: u.age,
+    gender: u.gender,
+    isPlus: u.isPlus && (!u.plusExpiresAt || new Date(u.plusExpiresAt) > new Date()),
+  };
+}
+
 function initMatchmaker(io, socket) {
   const user = socket.data.user;
 
@@ -30,20 +46,32 @@ function initMatchmaker(io, socket) {
 
       waitingPool.delete(otherId);
       const roomId = uuidv4();
-      const me = { id: user.id, nickname: user.nickname, avatarColor: user.avatarColor, avatarSeed: user.avatarSeed };
-      const them = { id: other.user.id, nickname: other.user.nickname, avatarColor: other.user.avatarColor, avatarSeed: other.user.avatarSeed };
+      const me = publicUserLite(user);
+      const them = publicUserLite(other.user);
 
       other.socket.data.roomId = roomId;
       socket.data.roomId = roomId;
+      other.socket.data.peerId = user.id;
+      socket.data.peerId = other.user.id;
+      other.socket.data.revealed = false;
+      socket.data.revealed = false;
 
       other.socket.join(roomId);
       socket.join(roomId);
 
-      other.socket.data.peerId = user.id;
-      socket.data.peerId = other.user.id;
+      const meAnonymity = !!user.anonymityEnabled;
+      const themAnonymity = !!other.user.anonymityEnabled;
 
-      other.socket.emit('match:found', { roomId, peer: me });
-      socket.emit('match:found', { roomId, peer: them });
+      other.socket.emit('match:found', {
+        roomId,
+        peer: me,
+        peerAnonymity: meAnonymity,
+      });
+      socket.emit('match:found', {
+        roomId,
+        peer: them,
+        peerAnonymity: themAnonymity,
+      });
 
       console.log(`[match] eşleşti: ${them.id} ↔ ${me.id} (room ${roomId})`);
       return;

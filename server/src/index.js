@@ -16,6 +16,7 @@ const usersRoutes = require('./routes/users');
 const shuffleRoutes = require('./routes/shuffle');
 const friendsRoutes = require('./routes/friends');
 const photosRoutes = require('./routes/photos');
+const adminRoutes = require('./routes/admin');
 const debugRoutes = require('./routes/debug');
 
 const app = express();
@@ -50,6 +51,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/shuffle', shuffleRoutes);
 app.use('/api/friends', friendsRoutes.router);
 app.use('/api/photos', photosRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/debug', debugRoutes);
 
 app.get('/', (req, res) => {

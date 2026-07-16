@@ -21,12 +21,17 @@ const Follow = sequelize.define(
       field: 'followed_id',
       index: true,
     },
+    status: {
+      type: DataTypes.ENUM('pending', 'accepted', 'rejected'),
+      defaultValue: 'pending',
+    },
   },
   {
     tableName: 'follows',
     updatedAt: false,
     indexes: [
       { unique: true, fields: ['follower_id', 'followed_id'] },
+      { fields: ['followed_id', 'status'] },
     ],
   }
 );
