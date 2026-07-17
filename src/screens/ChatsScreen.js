@@ -140,7 +140,7 @@ const ChatRow = memo(function ChatRow({ item, onPress, onPin, onDelete, isPinned
       </Animated.View>
     </View>
   );
-}
+});
 
 function formatTime(dateStr) {
   const d = new Date(dateStr);
