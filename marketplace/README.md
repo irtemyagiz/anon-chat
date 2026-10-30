@@ -1,0 +1,44 @@
+# 3D Dijital Tasarım Pazaryeri
+
+Creator ekonomisi ve puan cüzdanı tabanlı, çoklu satıcılı 3D dijital tasarım pazaryeri.
+Laravel 13 · PHP 8.3+ · MySQL 8 / MariaDB · Blade + Tailwind + Alpine.js + Three.js.
+
+> Geçici çalışma adı "3D Marketplace". Marka adı ve logo henüz belirlenmedi.
+
+## Temel kurallar
+
+- **1 USD = 100 POINT** (sabit). Minimum yükleme 500 POINT (yönetim panelinden değiştirilebilir).
+- Tüm dijital ürün satın alımları puanla yapılır. Creator fiyatı USD olarak girer.
+- Türkiye'deki kullanıcılar TL, diğerleri USD fiyat görür. TL, güncel USD/TRY kurundan hesaplanır.
+- Ödeme doğrulanmadan puan yüklenmez. Kur değişimi yüklenen puanı ve geçmiş ödemeleri etkilemez.
+- Creator kazançları puan cüzdanından tamamen ayrı tutulan, USD bazlı hakedişlerdir.
+- Ücretli dosyalar satın alınmadan indirilemez ve hiçbir zaman public dizinde tutulmaz.
+- İlk kurulumda ürün, kullanıcı veya satış verisi yoktur.
+
+## Dokümanlar
+
+| Doküman | İçerik |
+|---|---|
+| [docs/MIMARI.md](docs/MIMARI.md) | Mimari, puan defteri, ödeme/satın alma/hakediş akışları, güvenlik, faz durumu, karar bekleyen noktalar |
+| [docs/VERITABANI.md](docs/VERITABANI.md) | Tablo tablo veritabanı şeması ve kısıtlar |
+| [docs/KURULUM.md](docs/KURULUM.md) | XAMPP (Windows) yerel kurulum, Apache sanal sunucu, cPanel özeti |
+
+## Hızlı başlangıç
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
+
+## Testler
+
+```bash
+php artisan test
+```
+
+Puan dönüşümü, cüzdan defteri, puan yükleme ve webhook güvenliği, döviz kuru,
+satın alma, komisyon, iade, creator hakedişi ve ödeme talepleri için 58 test bulunur.
+Ayrıca MySQL/MariaDB gerektiren 2 eşzamanlılık testi vardır (`--group=concurrency`).
