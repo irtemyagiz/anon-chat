@@ -68,6 +68,11 @@ class AppServiceProvider extends ServiceProvider
             return str_contains($ability, '.') ? $user->hasPermission($ability) : null;
         });
 
+        RateLimiter::for('comments', fn (Request $request) => [
+            Limit::perMinute(5)->by('comments:'.$request->user()?->id),
+            Limit::perDay(100)->by('comments-day:'.$request->user()?->id),
+        ]);
+
         RateLimiter::for('webhooks', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
     }
 }

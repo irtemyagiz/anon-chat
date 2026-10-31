@@ -98,6 +98,22 @@
         </section>
     @endif
 
+    {{-- 9. Koleksiyonlar --}}
+    @if ($collections->isNotEmpty())
+        <section class="container-page py-10">
+            <x-section-heading :eyebrow="__('Topluluk seçkisi')" :title="__('Koleksiyonlar')"/>
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach ($collections as $collection)
+                    <a href="{{ route('collections.show', [$collection->user->username, $collection->slug]) }}" class="card p-5 transition hover:border-katman-300 dark:hover:border-katman-700">
+                        <span class="flex size-10 items-center justify-center rounded-xl bg-surface-2 text-katman-700 dark:text-katman-300"><x-icon name="layers"/></span>
+                        <span class="mt-4 block font-bold">{{ $collection->name }}</span>
+                        <span class="text-xs text-muted">{{ $collection->user->first_name }} · {{ trans_choice(':count model|:count model', $collection->products_count, ['count' => $collection->products_count]) }}</span>
+                    </a>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     {{-- 10. Creator olmaya davet --}}
     <section class="container-page py-16">
         <div class="relative overflow-hidden rounded-[2rem] bg-katman-900 px-6 py-12 text-white sm:px-12 dark:bg-katman-950 dark:ring-1 dark:ring-katman-900">

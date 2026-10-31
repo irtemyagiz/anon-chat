@@ -30,6 +30,7 @@ class DesignerController extends Controller
             'profile' => $profile->load('user'),
             'products' => $search->query([])->where('creator_id', $profile->user_id)->paginate(24),
             'followersCount' => DB::table('follows')->where('creator_id', $profile->user_id)->count(),
+            'isFollowing' => auth()->check() && DB::table('follows')->where(['follower_id' => auth()->id(), 'creator_id' => $profile->user_id])->exists(),
         ]);
     }
 }

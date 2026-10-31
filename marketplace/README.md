@@ -43,5 +43,6 @@ Puan dönüşümü, cüzdan defteri, puan yükleme ve webhook güvenliği, dövi
 satın alma, komisyon, iade, creator hakedişi, ödeme talepleri, kayıt/giriş, creator
 başvurusu, puan yükleme akışı, güvenli indirme, creator paneli ve dosya yükleme güvenliği
 (sahte uzantı, zararlı arşiv, SVG betiği, zararlı dosya taraması), yönetim paneli, yönetici
-2FA ve rol yükseltme koruması için 140 test bulunur.
+2FA, rol yükseltme koruması, hakediş akışı (IBAN/TCKN doğrulaması) ve topluluk özellikleri
+(değerlendirme, yorum spam koruması, koleksiyon gizliliği) için 167 test bulunur.
 Ayrıca MySQL/MariaDB gerektiren 2 eşzamanlılık testi vardır (`--group=concurrency`).

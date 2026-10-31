@@ -137,6 +137,30 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(PointPurchase::class);
     }
 
+    /**
+     * @return HasMany<Collection, $this>
+     */
+    public function collections(): HasMany
+    {
+        return $this->hasMany(Collection::class);
+    }
+
+    /**
+     * @return BelongsToMany<Product, $this>
+     */
+    public function favorites(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'favorites')->withPivot('created_at');
+    }
+
+    /**
+     * @return BelongsToMany<User, $this>
+     */
+    public function following(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'follows', 'follower_id', 'creator_id')->withPivot('created_at');
+    }
+
     public function hasRole(string $role): bool
     {
         return $this->roles->contains('name', $role);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\CreatorStatus;
 use App\Models\Category;
+use App\Models\Collection;
 use App\Models\CreatorProfile;
 use App\Models\Product;
 use App\Services\Catalog\ProductSearch;
@@ -30,6 +31,14 @@ class HomeController extends Controller
                 ->where('is_active', true)
                 ->withCount(['products' => fn ($q) => $q->published()])
                 ->orderBy('sort_order')
+                ->get(),
+            'collections' => Collection::query()
+                ->where('is_public', true)
+                ->whereHas('products', fn ($q) => $q->published())
+                ->with('user:id,username,first_name')
+                ->withCount(['products' => fn ($q) => $q->published()])
+                ->orderByDesc('products_count')
+                ->limit(4)
                 ->get(),
             'designers' => CreatorProfile::query()
                 ->where('status', CreatorStatus::Approved)

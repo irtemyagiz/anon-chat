@@ -122,8 +122,8 @@ class CreatorPanelTest extends TestCase
         $this->post(route('creator.products.submit', $product))->assertSessionHasErrors('submit');
         $this->assertSame(ProductStatus::Draft, $product->fresh()->status, 'Görsel ve dosya olmadan gönderilemez');
 
-        $this->put(route('creator.products.update', $product), $this->productData(['images' => [$this->image()], 'files' => [$this->stl()]]))->assertSessionHasNoErrors();
-        $this->post(route('creator.products.submit', $product))->assertSessionHasNoErrors();
+        $this->put(route('creator.products.update', $product), $this->productData(['images' => [$this->image()], 'files' => [$this->stl()]]))->assertRedirect()->assertSessionHasNoErrors();
+        $this->post(route('creator.products.submit', $product))->assertRedirect()->assertSessionHasNoErrors();
         $this->assertSame(ProductStatus::PendingReview, $product->fresh()->status);
         $this->get(route('products.show', $product))->assertNotFound();
 
@@ -173,7 +173,7 @@ class CreatorPanelTest extends TestCase
         $this->createProduct($creator, ['price' => '4', 'commercial_price' => '2'])->assertSessionHasErrors('commercial_price');
         $this->assertSame(0, Product::query()->count());
 
-        $this->createProduct($creator, ['price' => '0'])->assertSessionHasNoErrors();
+        $this->createProduct($creator, ['price' => '0'])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertTrue(Product::query()->sole()->is_free);
     }
 
@@ -197,7 +197,7 @@ class CreatorPanelTest extends TestCase
         $this->createProduct($creator, ['title' => 'Çalıştırılabilir', 'files' => [$this->zip(['kurulum.exe' => 'MZ'])]])->assertSessionHasErrors('uploads');
         $this->createProduct($creator, ['title' => 'Sıkıştırma bombası', 'files' => [$this->zip(['bomba.stl' => str_repeat('0', 20 * 1024 * 1024)])]])->assertSessionHasErrors('uploads');
 
-        $this->createProduct($creator, ['title' => 'Temiz arşiv', 'files' => [$this->zip(['parcalar/govde.stl' => file_get_contents(base_path('tests/Fixtures/ascii.stl')), 'okubeni.pdf' => '%PDF-1.4'])]])->assertSessionHasNoErrors();
+        $this->createProduct($creator, ['title' => 'Temiz arşiv', 'files' => [$this->zip(['parcalar/govde.stl' => file_get_contents(base_path('tests/Fixtures/ascii.stl')), 'okubeni.pdf' => '%PDF-1.4'])]])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertSame(1, ProductFile::query()->count());
     }
 

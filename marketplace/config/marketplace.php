@@ -41,6 +41,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Hakediş ödeme yöntemleri (ülkeye göre)
+    |--------------------------------------------------------------------------
+    |
+    | Türkiye'deki creator'lara TL ile IBAN'a, diğerlerine USD ile ödeme yapılır.
+    | Ödeme anındaki kur ödeme kaydına yazılır.
+    |
+    */
+
+    'payouts' => [
+        'methods' => [
+            'TR' => [
+                'bank_transfer_try' => ['label' => 'Banka havalesi / EFT (TL)', 'currency' => 'TRY', 'fields' => ['account_holder', 'iban']],
+            ],
+            'default' => [
+                'swift_usd' => ['label' => 'Uluslararası banka transferi (USD, SWIFT)', 'currency' => 'USD', 'fields' => ['account_holder', 'iban', 'swift', 'bank_name']],
+                'wise_usd' => ['label' => 'Wise (USD)', 'currency' => 'USD', 'fields' => ['account_holder', 'email']],
+                'payoneer_usd' => ['label' => 'Payoneer (USD)', 'currency' => 'USD', 'fields' => ['account_holder', 'email']],
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Para birimleri ve döviz kuru
     |--------------------------------------------------------------------------
     */

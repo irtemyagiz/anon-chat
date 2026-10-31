@@ -189,7 +189,54 @@
                             </ul>
                         </div>
                     @endif
+
+                    {{-- Beğeni, favori, koleksiyon, paylaş --}}
+                    <div class="mt-6 flex flex-wrap items-center gap-2 border-t border-line pt-6">
+                        @auth
+                            <form method="POST" action="{{ route('products.like', $product) }}" x-data="toggleAction(@js($state['liked']), @js($product->likes_count))" @submit.prevent="send($el.action, 'liked')">@csrf
+                                <button class="btn-secondary px-3 py-1.5" :class="on && 'border-katman-500 text-katman-700 dark:text-katman-300'" :aria-pressed="on">
+                                    <x-icon name="heart" class="size-4"/><span x-text="count">{{ $product->likes_count }}</span>
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ route('products.favorite', $product) }}" x-data="toggleAction(@js($state['favorited']))" @submit.prevent="send($el.action, 'favorited')">@csrf
+                                <button class="btn-secondary px-3 py-1.5" :class="on && 'border-katman-500 text-katman-700 dark:text-katman-300'" :aria-pressed="on"><x-icon name="sparkles" class="size-4"/><span x-text="on ? @js(__('Favorilerde')) : @js(__('Favorilere ekle'))">{{ $state['favorited'] ? __('Favorilerde') : __('Favorilere ekle') }}</span></button>
+                            </form>
+                            <div class="relative" x-data="collectionPicker(@js(route('account.collection-options', $product)), @js(url('/koleksiyonlar')), {{ $product->id }})" @keydown.escape.window="open = false">
+                                <button type="button" @click="toggle()" class="btn-secondary px-3 py-1.5"><x-icon name="layers" class="size-4"/>{{ __('Koleksiyona ekle') }}</button>
+                                <div x-cloak x-show="open" @click.outside="open = false" class="card absolute right-0 z-30 mt-2 w-64 p-3 text-sm">
+                                    <template x-for="item in items" :key="item.id">
+                                        <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-surface-2"><input type="checkbox" :checked="item.in" @change="toggleItem(item)" class="accent-katman-600"><span x-text="item.name"></span></label>
+                                    </template>
+                                    <p x-show="loaded && ! items.length" class="px-2 py-1 text-xs text-muted">{{ __('Henüz koleksiyonun yok.') }}</p>
+                                    <form @submit.prevent="create()" class="mt-2 flex gap-1 border-t border-line pt-2">
+                                        <input x-model="name" class="input py-1.5 text-xs" placeholder="{{ __('Yeni koleksiyon') }}" maxlength="100" required>
+                                        <button class="btn-primary px-2 py-1 text-xs">{{ __('Ekle') }}</button>
+                                    </form>
+                                </div>
+                            </div>
+                        @else
+                            <a href="{{ route('login') }}" class="btn-secondary px-3 py-1.5"><x-icon name="heart" class="size-4"/>{{ $product->likes_count }}</a>
+                        @endauth
+                        <button type="button" x-data @click="navigator.share ? navigator.share({ title: @js($product->title), url: location.href }) : navigator.clipboard.writeText(location.href).then(() => $el.querySelector('span').textContent = @js(__('Bağlantı kopyalandı')))" class="btn-ghost px-3 py-1.5"><x-icon name="arrow-right" class="size-4"/><span>{{ __('Paylaş') }}</span></button>
+                    </div>
+
+                    @php $defaultLicense = $activeLicenses->first()?->license; @endphp
+                    @if ($defaultLicense)
+                        <p class="mt-4 text-xs text-muted"><span class="font-semibold text-ink">{{ __('Lisans') }}:</span> {{ $defaultLicense->summary[app()->getLocale()] ?? $defaultLicense->summary['tr'] ?? '' }}</p>
+                    @endif
                 </div>
+                <details class="mt-3 text-sm">
+                    <summary class="cursor-pointer text-xs text-subtle hover:text-muted">{{ __('Bu içeriği bildir') }}</summary>
+                    <form method="POST" action="{{ route('products.report', $product) }}" class="card mt-2 space-y-2 p-4">
+                        @csrf
+                        <select name="reason" class="input py-2" required>
+                            @foreach (\App\Models\ProductReport::REASONS as $value => $label)<option value="{{ $value }}">{{ __($label) }}</option>@endforeach
+                        </select>
+                        <textarea name="details" rows="3" class="input" minlength="20" required placeholder="{{ __('Açıklama (telif bildirimi için orijinal eserin bağlantısını ekleyin)') }}"></textarea>
+                        @guest<input name="reporter_email" type="email" class="input py-2" placeholder="{{ __('E-posta adresiniz') }}" required>@endguest
+                        <button class="btn-secondary w-full py-2">{{ __('Bildir') }}</button>
+                    </form>
+                </details>
             </aside>
         </div>
 
@@ -234,6 +281,84 @@
                 </ol>
             </section>
         @endif
+
+        {{-- Değerlendirmeler --}}
+        <section id="degerlendirmeler" class="card mt-8 p-6">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="text-lg font-bold">{{ __('Değerlendirmeler') }}</h2>
+                @if ($product->reviews_count > 0)
+                    <p class="text-sm"><span class="font-display text-xl font-extrabold">{{ number_format((float) $product->rating_average, 1, ',', '') }}</span> <span class="text-filament-500">★</span> <span class="text-muted">· {{ trans_choice(':count değerlendirme|:count değerlendirme', $product->reviews_count, ['count' => $product->reviews_count]) }}</span></p>
+                @endif
+            </div>
+            @error('review')<p class="mt-3 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+
+            @if ($owns && ! $isOwnProduct)
+                <form method="POST" action="{{ route('products.review', $product) }}" class="mt-4 space-y-3 rounded-xl bg-surface-2 p-4" x-data="{ rating: {{ old('rating', $state['myReview']?->rating ?? 0) }} }">
+                    @csrf
+                    <p class="text-sm font-semibold">{{ $state['myReview'] ? __('Değerlendirmeni güncelle') : __('Bu modeli değerlendir') }}</p>
+                    <div class="flex gap-1" role="radiogroup" aria-label="{{ __('Puan') }}">
+                        @for ($i = 1; $i <= 5; $i++)
+                            <button type="button" @click="rating = {{ $i }}" :class="rating >= {{ $i }} ? 'text-filament-500' : 'text-subtle'" class="text-2xl leading-none" aria-label="{{ $i }}">★</button>
+                        @endfor
+                        <input type="hidden" name="rating" :value="rating">
+                    </div>
+                    <input name="title" value="{{ old('title', $state['myReview']?->title) }}" class="input" placeholder="{{ __('Başlık (isteğe bağlı)') }}" maxlength="120">
+                    <textarea name="body" rows="3" class="input" maxlength="2000" placeholder="{{ __('Baskı deneyimini paylaş (isteğe bağlı)') }}">{{ old('body', $state['myReview']?->body) }}</textarea>
+                    <button class="btn-primary" :disabled="rating === 0">{{ __('Kaydet') }}</button>
+                </form>
+            @elseif (! $isOwnProduct)
+                <p class="mt-3 text-xs text-muted">{{ __('Yalnızca modeli satın alan veya indiren kullanıcılar değerlendirme yapabilir.') }}</p>
+            @endif
+
+            <div class="mt-4 divide-y divide-line">
+                @forelse ($reviews as $review)
+                    <article class="py-4">
+                        <div class="flex flex-wrap items-center gap-2 text-sm">
+                            <span class="text-filament-500">{{ str_repeat('★', $review->rating) }}<span class="text-subtle">{{ str_repeat('★', 5 - $review->rating) }}</span></span>
+                            <span class="font-semibold">{{ $review->user->first_name }}</span>
+                            @if ($review->is_verified_purchase)<span class="chip border-katman-200 text-katman-700 dark:border-katman-800 dark:text-katman-300"><x-icon name="check" class="size-3"/>{{ __('Doğrulanmış satın alma') }}</span>@endif
+                            <span class="text-xs text-subtle">{{ $review->created_at->diffForHumans() }}</span>
+                        </div>
+                        @if ($review->title)<p class="mt-2 font-semibold">{{ $review->title }}</p>@endif
+                        @if ($review->body)<p class="mt-1 text-sm whitespace-pre-line text-muted">{{ $review->body }}</p>@endif
+                        @if ($review->creator_reply)
+                            <div class="mt-3 rounded-xl border-l-4 border-katman-500 bg-surface-2 px-4 py-2 text-sm"><p class="text-xs font-semibold text-katman-700 dark:text-katman-300">{{ __('Tasarımcının yanıtı') }}</p><p class="mt-1 text-muted">{{ $review->creator_reply }}</p></div>
+                        @elseif ($isOwnProduct)
+                            <form method="POST" action="{{ route('reviews.reply', $review) }}" class="mt-3 flex gap-2">@csrf<input name="reply" class="input py-1.5 text-sm" placeholder="{{ __('Yanıt yaz') }}" required><button class="btn-secondary shrink-0 px-3 py-1.5">{{ __('Yanıtla') }}</button></form>
+                        @endif
+                    </article>
+                @empty
+                    <p class="py-4 text-sm text-muted">{{ __('Henüz değerlendirme yok.') }}</p>
+                @endforelse
+            </div>
+        </section>
+
+        {{-- Yorumlar --}}
+        <section id="yorumlar" class="card mt-8 p-6">
+            <h2 class="text-lg font-bold">{{ __('Yorumlar') }}</h2>
+            @error('comment')<p class="mt-3 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+            @auth
+                @if (auth()->user()->hasVerifiedEmail())
+                    <form method="POST" action="{{ route('products.comment', $product) }}" class="mt-4 space-y-2">
+                        @csrf
+                        <textarea name="body" rows="2" class="input" minlength="2" maxlength="2000" required placeholder="{{ __('Soru sor veya yorum yaz') }}">{{ old('body') }}</textarea>
+                        <button class="btn-primary px-4 py-2">{{ __('Gönder') }}</button>
+                    </form>
+                @else
+                    <p class="mt-3 text-sm text-muted">{{ __('Yorum yazmak için e-posta adresini doğrula.') }}</p>
+                @endif
+            @else
+                <p class="mt-3 text-sm text-muted"><a href="{{ route('login') }}" class="font-semibold text-katman-700 hover:underline dark:text-katman-300">{{ __('Giriş yap') }}</a> {{ __('ve yorum yaz.') }}</p>
+            @endauth
+
+            <div class="mt-4 divide-y divide-line">
+                @forelse ($comments as $comment)
+                    @include('products.partials.comment', ['comment' => $comment, 'product' => $product])
+                @empty
+                    <p class="py-4 text-sm text-muted">{{ __('Henüz yorum yok. İlk soruyu sen sor.') }}</p>
+                @endforelse
+            </div>
+        </section>
 
         @if ($similar->isNotEmpty())
             <section class="mt-12">

@@ -147,6 +147,14 @@ class Product extends Model
     }
 
     /**
+     * @return HasMany<Comment, $this>
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    /**
      * @param  Builder<Product>  $query
      */
     public function scopePublished(Builder $query): void

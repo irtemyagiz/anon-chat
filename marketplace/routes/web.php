@@ -1,12 +1,15 @@
 <?php
 
+use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Admin\CatalogSettingsController;
 use App\Http\Controllers\Admin\CommissionController as AdminCommissionController;
 use App\Http\Controllers\Admin\CreatorController as AdminCreatorController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ExchangeRateController as AdminExchangeRateController;
 use App\Http\Controllers\Admin\LogController as AdminLogController;
+use App\Http\Controllers\Admin\ModerationController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Admin\PayoutController as AdminPayoutController;
 use App\Http\Controllers\Admin\PointController as AdminPointController;
 use App\Http\Controllers\Admin\ProductModerationController;
 use App\Http\Controllers\Admin\TwoFactorController;
@@ -16,7 +19,10 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\Creator\CommunityController as CreatorCommunityController;
 use App\Http\Controllers\Creator\DashboardController as CreatorDashboardController;
+use App\Http\Controllers\Creator\PayoutController as CreatorPayoutController;
 use App\Http\Controllers\Creator\ProductActionController as CreatorProductActionController;
 use App\Http\Controllers\Creator\ProductController as CreatorProductController;
 use App\Http\Controllers\Creator\SalesController as CreatorSalesController;
@@ -28,6 +34,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PreferenceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SandboxCheckoutController;
 use App\Http\Controllers\TopUpController;
 use App\Http\Controllers\WalletController;
@@ -48,6 +55,8 @@ Route::get('/kategori/{category}', [CategoryController::class, 'show'])->name('c
 Route::get('/tasarimcilar', [DesignerController::class, 'index'])->name('designers.index');
 Route::get('/magaza/{profile}', [DesignerController::class, 'show'])->name('designers.show');
 Route::get('/tasarim-yukle', [CreatorApplicationController::class, 'upload'])->name('upload');
+Route::get('/koleksiyon/{username}/{slug}', [CommunityController::class, 'showCollection'])->name('collections.show');
+Route::post('/model/{product}/sikayet', [ReviewController::class, 'reportProduct'])->middleware('throttle:5,10')->name('products.report');
 Route::post('/tercihler', PreferenceController::class)->middleware('throttle:30,1')->name('preferences.update');
 
 /*
@@ -79,6 +88,38 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/creator/durum', [CreatorApplicationController::class, 'status'])->name('creator.status');
 
     /*
+    | Hesap ve topluluk
+    */
+    Route::prefix('hesabim')->name('account.')->group(function (): void {
+        Route::get('/', [AccountController::class, 'library'])->name('library');
+        Route::get('/favoriler', [AccountController::class, 'favorites'])->name('favorites');
+        Route::get('/koleksiyonlar', [AccountController::class, 'collections'])->name('collections');
+        Route::get('/takip', [AccountController::class, 'following'])->name('following');
+        Route::get('/ayarlar', [AccountController::class, 'edit'])->name('settings');
+        Route::put('/ayarlar', [AccountController::class, 'update'])->name('settings.update');
+        Route::put('/ayarlar/sifre', [AccountController::class, 'updatePassword'])->middleware('throttle:6,1')->name('settings.password');
+        Route::get('/koleksiyon-secenekleri/{product}', [AccountController::class, 'collectionOptions'])->name('collection-options');
+    });
+
+    Route::middleware('throttle:60,1')->group(function (): void {
+        Route::post('/model/{product}/favori', [CommunityController::class, 'favorite'])->name('products.favorite');
+        Route::post('/model/{product}/begen', [CommunityController::class, 'like'])->name('products.like');
+        Route::post('/magaza/{profile}/takip', [CommunityController::class, 'follow'])->name('designers.follow');
+        Route::post('/koleksiyonlar', [CommunityController::class, 'storeCollection'])->name('collections.store');
+        Route::put('/koleksiyonlar/{collection}', [CommunityController::class, 'updateCollection'])->name('collections.update');
+        Route::delete('/koleksiyonlar/{collection}', [CommunityController::class, 'destroyCollection'])->name('collections.destroy');
+        Route::post('/koleksiyonlar/{collection}/model/{product}', [CommunityController::class, 'toggleInCollection'])->name('collections.toggle');
+    });
+
+    Route::middleware('verified')->group(function (): void {
+        Route::post('/model/{product}/degerlendirme', [ReviewController::class, 'storeReview'])->middleware('throttle:10,1')->name('products.review');
+        Route::post('/model/{product}/yorum', [ReviewController::class, 'storeComment'])->middleware('throttle:comments')->name('products.comment');
+        Route::delete('/yorum/{comment}', [ReviewController::class, 'destroyComment'])->name('comments.destroy');
+        Route::post('/yorum/{comment}/sikayet', [ReviewController::class, 'reportComment'])->middleware('throttle:20,1')->name('comments.report');
+        Route::post('/degerlendirme/{review}/yanit', [ReviewController::class, 'reply'])->middleware('throttle:20,1')->name('reviews.reply');
+    });
+
+    /*
     | Creator paneli: yalnızca onaylı creator'lar
     */
     Route::middleware(['verified', 'creator'])->prefix('panel')->name('creator.')->group(function (): void {
@@ -95,6 +136,11 @@ Route::middleware('auth')->group(function (): void {
         Route::delete('/urunler/{product:uuid}/onizleme', [CreatorProductActionController::class, 'destroyPreview'])->name('products.preview.destroy');
         Route::get('/satislar', [CreatorSalesController::class, 'sales'])->name('sales');
         Route::get('/gelirler', [CreatorSalesController::class, 'earnings'])->name('earnings');
+        Route::get('/hakedisler', [CreatorPayoutController::class, 'index'])->name('payouts');
+        Route::post('/hakedisler/dogrulama', [CreatorPayoutController::class, 'verify'])->middleware('throttle:5,1')->name('payouts.verify');
+        Route::post('/hakedisler', [CreatorPayoutController::class, 'store'])->middleware('throttle:10,1')->name('payouts.store');
+        Route::get('/yorumlar', [CreatorCommunityController::class, 'reviews'])->name('reviews');
+        Route::get('/takipciler', [CreatorCommunityController::class, 'followers'])->name('followers');
         Route::get('/magaza', [StoreSettingsController::class, 'edit'])->name('store.edit');
         Route::put('/magaza', [StoreSettingsController::class, 'update'])->name('store.update');
     });
@@ -130,7 +176,15 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('yonetim')->name('admin
             Route::put('/creatorlar/{profile:id}', [AdminCreatorController::class, 'update'])->name('creators.update');
         });
 
+        Route::middleware('can:comments.moderate')->group(function (): void {
+            Route::get('/yorumlar', [ModerationController::class, 'comments'])->name('moderation.comments');
+            Route::put('/yorumlar/{comment}', [ModerationController::class, 'updateComment'])->name('moderation.comments.update');
+            Route::put('/degerlendirmeler/{review}', [ModerationController::class, 'updateReview'])->name('moderation.reviews.update');
+        });
+
         Route::middleware('can:products.moderate')->group(function (): void {
+            Route::get('/sikayetler', [ModerationController::class, 'reports'])->name('moderation.reports');
+            Route::put('/sikayetler/{report}', [ModerationController::class, 'resolveReport'])->name('moderation.reports.resolve');
             Route::get('/urunler', [ProductModerationController::class, 'index'])->name('products.index');
             Route::get('/urunler/{product:uuid}', [ProductModerationController::class, 'show'])->name('products.show');
             Route::post('/urunler/{product:uuid}/karar', [ProductModerationController::class, 'decide'])->name('products.decide');
@@ -143,6 +197,15 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('yonetim')->name('admin
             Route::put('/kullanicilar/{user:uuid}/durum', [AdminUserController::class, 'updateStatus'])->name('users.status');
             Route::put('/kullanicilar/{user:uuid}/roller', [AdminUserController::class, 'updateRoles'])->name('users.roles');
             Route::post('/kullanicilar/{user:uuid}/puan-duzeltme', [AdminUserController::class, 'adjustWallet'])->name('users.adjust');
+        });
+
+        Route::middleware('can:payouts.manage')->group(function (): void {
+            Route::get('/hakedisler', [AdminPayoutController::class, 'index'])->name('payouts.index');
+            Route::get('/hakedisler/dogrulamalar', [AdminPayoutController::class, 'verifications'])->name('payouts.verifications');
+            Route::put('/hakedisler/dogrulamalar/{verification}', [AdminPayoutController::class, 'reviewVerification'])->name('payouts.verifications.review');
+            Route::get('/hakedisler/dogrulamalar/{verification}/belge', [AdminPayoutController::class, 'document'])->name('payouts.verifications.document');
+            Route::get('/hakedisler/{payoutRequest:uuid}', [AdminPayoutController::class, 'show'])->name('payouts.show');
+            Route::post('/hakedisler/{payoutRequest:uuid}/karar', [AdminPayoutController::class, 'decide'])->name('payouts.decide');
         });
 
         Route::middleware('can:payments.manage')->group(function (): void {

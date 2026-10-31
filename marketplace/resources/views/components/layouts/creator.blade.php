@@ -6,6 +6,9 @@
         ['creator.products.create', 'upload', __('Yeni Ürün Ekle')],
         ['creator.sales', 'coins', __('Satışlar')],
         ['creator.earnings', 'wallet', __('Gelirlerim')],
+        ['creator.payouts', 'coins', __('Hakedişler')],
+        ['creator.reviews', 'heart', __('Yorumlar')],
+        ['creator.followers', 'user', __('Takipçiler')],
         ['creator.store.edit', 'store', __('Mağaza Ayarları')],
     ];
 @endphp

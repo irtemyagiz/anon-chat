@@ -6,7 +6,21 @@
             <div class="flex-1">
                 <h1 class="text-3xl font-extrabold">{{ $profile->store_name }}</h1>
                 <p class="text-muted">{{ $profile->designer_name }} · {{ trans_choice(':count takipçi|:count takipçi', $followersCount, ['count' => $followersCount]) }}</p>
+                @if ($profile->social_links)
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        @foreach ($profile->social_links as $network => $url)<a href="{{ $url }}" rel="nofollow noopener" target="_blank" class="chip hover:text-ink">{{ ['website' => __('Web sitesi'), 'instagram' => 'Instagram', 'youtube' => 'YouTube', 'x' => 'X', 'tiktok' => 'TikTok'][$network] ?? $network }}</a>@endforeach
+                    </div>
+                @endif
             </div>
+            @auth
+                @if (auth()->id() !== $profile->user_id)
+                    <form method="POST" action="{{ route('designers.follow', $profile) }}" x-data="toggleAction(@js($isFollowing))" @submit.prevent="send($el.action, 'following')">@csrf
+                        <button class="btn-primary" :class="on && '!bg-surface-2 !text-ink'" x-text="on ? @js(__('Takip ediliyor')) : @js(__('Takip et'))">{{ $isFollowing ? __('Takip ediliyor') : __('Takip et') }}</button>
+                    </form>
+                @endif
+            @else
+                <a href="{{ route('login') }}" class="btn-primary">{{ __('Takip et') }}</a>
+            @endauth
         </div>
         @if ($profile->description)
             <div class="container-page pb-8"><p class="max-w-3xl text-muted">{{ $profile->description }}</p></div>

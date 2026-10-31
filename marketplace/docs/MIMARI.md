@@ -236,6 +236,8 @@ kaldırılan ürünü önceden satın alanlar indirmeye devam eder. Onay şimdil
 | Yetki | Rol + izin tabloları, Gate (noktalı yetenekler izinlerden), Laravel Policy'leri |
 | Yönetici 2FA | TOTP (RFC 6238, test vektörleriyle doğrulandı), QR ile kurulum, tek kullanımlık kurtarma kodları (özetlenerek saklanır), tekrar oynatma koruması, 5 denemede kilit, başarısız denemeler güvenlik olayı |
 | Yönetici işlemleri | Her POST/PUT/DELETE `admin_logs` tablosuna (şifre/token hariç); kritik işlemler ayrıca `audit_logs` tablosuna eski/yeni değerle |
+| Yorum spam'i | E-posta doğrulaması, dakikada 5 / günde 100 yorum, aynı metni 10 dakika içinde tekrar gönderme engeli, en fazla 2 bağlantı, Blade ile kaçışlı çıktı (XSS), 3 farklı kullanıcı şikâyetinde otomatik gizleme |
+| Ödeme bilgileri | IBAN/hesap bilgisi ve kimlik/vergi no şifreli; listede maskeli; tam bilgi yalnızca hakediş yetkisiyle ve her görüntüleme denetim kaydına |
 | Rol yükseltme | Rolleri yalnızca yönetici değiştirir; kimse kendi yönetici rolünü kaldıramaz veya kendini askıya alamaz; creator rolü yalnızca başvuru onayıyla verilir |
 | Mass assignment | Finansal modeller tamamen korumalıdır (`#[Guarded(['*'])]`), yalnızca servisler yazar |
 | Hassas veri | Şifreli cast (vergi no, kimlik no, IBAN, 2FA secret) |
@@ -261,12 +263,15 @@ kaldırılan ürünü önceden satın alanlar indirmeye devam eder. Onay şimdil
 | 13. Puan yükleme | ✅ Paket seçimi → sağlayıcı → imzalı webhook → sonuç sayfası (sandbox ile uçtan uca) |
 | 15. Satın alma | ✅ Onay adımı, yetersiz bakiyede eksik puanla yükleme sayfasına yönlendirme |
 | 16. Güvenli indirme | ✅ Hak kontrolü, 10 dakikalık imzalı bağlantı, tarama durumu kontrolü, indirme kaydı |
-| 17. Creator paneli | 🟡 Genel bakış (8 kart + 30 günlük satış grafiği), ürünlerim, ürün formu, satışlar, gelirler, mağaza ayarları. Yorumlar, takipçiler, kuponlar, bildirimler sonra |
-| 18–19. Komisyon, hakediş, ödeme talebi | ✅ Servis katmanı. Satıcı doğrulama ve ödeme talebi formu sonra |
+| 17. Creator paneli | 🟡 Genel bakış (8 kart + 30 günlük satış grafiği), ürünlerim, ürün formu, satışlar, gelirler, hakedişler, yorumlar (değerlendirmelere yanıt), takipçiler, mağaza ayarları. Kupon yönetimi ve bildirimler sonra |
+| 18–19. Komisyon, hakediş, ödeme talebi | ✅ Satıcı doğrulama (T.C. kimlik no sağlaması, şifreli saklama, belge), ülkeye göre ödeme yöntemi (TR: IBAN/TL, diğer: SWIFT/Wise/Payoneer USD), IBAN mod-97 doğrulaması, rezerv; yönetici: doğrulama onayı, talep onay/ret, TL ödemede kur kaydı, hesap bilgisi görüntüleme denetimi |
+| 20. Favoriler ve koleksiyonlar | ✅ Favori, beğeni (sayaç tutarlı), koleksiyon (herkese açık/gizli, ürün sayfasından ekleme), ana sayfada koleksiyonlar |
+| 21. Takip sistemi | ✅ Mağaza takibi, takip ettiklerim, creator takipçi listesi |
+| 22. Yorum ve değerlendirme | ✅ Yıldızlı değerlendirme yalnızca ürünü edinenler; satın alanlara "doğrulanmış satın alma" rozeti; creator yanıtı; yorum + yanıt; spam koruması; 3 şikâyette otomatik gizleme; içerik/telif şikâyeti (ziyaretçi e-postayla); yönetici moderasyonu |
 | 25. Yönetim paneli | 🟡 Dashboard (11 metrik + bekleyen işler), creator başvuruları, ürün moderasyonu (onay/ret/yayından kaldırma/öne çıkarma), kullanıcılar (arama, askıya alma, rol, puan düzeltme, işlem ve satın alma geçmişi), puan paketleri + minimum yükleme + ekonomi raporu, ödemeler (iade, sağlayıcılar, webhook kayıtları, itirazlar), döviz kuru (manuel/otomatik/geçmiş/sağlayıcı kayıtları), komisyon (varsayılan + creator/kategori/kampanya kuralları), kategoriler, dosya formatları, loglar. Hakediş yönetimi, içerik/SEO ve sistem ayarları sonra |
 | 23. Arama ve filtreleme | 🟡 Metin, kategori, ücretli/ücretsiz, sıralama. Format/lisans/teknoloji filtreleri ve anlık öneriler sonra |
-| 29. Otomatik testler | ✅ 140 test + 2 eşzamanlılık testi |
-| 14, 19 (arayüz), 20–22, 24, 26–28, 30 | ⏳ Sıradaki adımlar: satıcı doğrulama + hakediş talebi/ödeme arayüzü, topluluk (favori, koleksiyon, takip, yorum), bildirimler, SEO (sitemap), İngilizce çeviriler, gerçek ödeme sağlayıcıları |
+| 29. Otomatik testler | ✅ 167 test + 2 eşzamanlılık testi |
+| 14, 24, 26–28, 30 | ⏳ Sıradaki adımlar: bildirimler (e-posta + site içi), SEO (sitemap, robots, yapılandırılmış veri), içerik yönetimi (sayfa/SSS/blog), İngilizce çeviriler, gerçek ödeme sağlayıcıları, cPanel dağıtım rehberi |
 
 ## 11. Karar bekleyen noktalar
 

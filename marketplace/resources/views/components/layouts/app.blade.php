@@ -70,6 +70,9 @@
                             <p class="truncate text-xs text-muted">{{ '@'.auth()->user()->username }}</p>
                         </div>
                         <div class="my-1 border-t border-line"></div>
+                        <a href="{{ route('account.library') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"><x-icon name="download" class="size-4"/>{{ __('Kütüphanem') }}</a>
+                        <a href="{{ route('account.favorites') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"><x-icon name="sparkles" class="size-4"/>{{ __('Favorilerim') }}</a>
+                        <a href="{{ route('account.collections') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"><x-icon name="layers" class="size-4"/>{{ __('Koleksiyonlarım') }}</a>
                         <a href="{{ route('wallet') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"><x-icon name="wallet" class="size-4"/>{{ __('Cüzdanım') }}</a>
                         <a href="{{ route('top-up.create') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"><x-icon name="coins" class="size-4"/>{{ __('Puan yükle') }}</a>
                         @can('admin.access')
@@ -78,6 +81,7 @@
                         @if (auth()->user()->creatorProfile)
                             <a href="{{ auth()->user()->isApprovedCreator() ? route('creator.dashboard') : route('creator.status') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"><x-icon name="store" class="size-4"/>{{ __('Creator paneli') }}</a>
                         @endif
+                        <a href="{{ route('account.settings') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"><x-icon name="user" class="size-4"/>{{ __('Profil ve ayarlar') }}</a>
                         <div class="my-1 border-t border-line"></div>
                         <form method="POST" action="{{ route('logout') }}">@csrf
                             <button class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-2"><x-icon name="logout" class="size-4"/>{{ __('Çıkış yap') }}</button>
@@ -140,6 +144,10 @@
                 <a href="{{ route('products.index', ['sirala' => 'yeni']) }}" class="rounded-lg px-3 py-2.5 hover:bg-surface-2">{{ __('Yeni Modeller') }}</a>
                 <a href="{{ route('designers.index') }}" class="rounded-lg px-3 py-2.5 hover:bg-surface-2">{{ __('Tasarımcılar') }}</a>
                 <a href="{{ route('upload') }}" class="rounded-lg px-3 py-2.5 hover:bg-surface-2">{{ __('Tasarım Yükle') }}</a>
+                @auth
+                    <a href="{{ route('account.library') }}" class="rounded-lg px-3 py-2.5 hover:bg-surface-2">{{ __('Kütüphanem') }}</a>
+                    <a href="{{ route('account.settings') }}" class="rounded-lg px-3 py-2.5 hover:bg-surface-2">{{ __('Profil ve ayarlar') }}</a>
+                @endauth
             </nav>
             <div class="mt-auto flex flex-col gap-2 pt-6">
                 @auth

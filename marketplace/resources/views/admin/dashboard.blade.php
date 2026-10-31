@@ -8,7 +8,7 @@
             @foreach ([
                 ['creators', __('creator başvurusu bekliyor'), 'admin.creators.index', 'creators.manage'],
                 ['products', __('ürün inceleme bekliyor'), 'admin.products.index', 'products.moderate'],
-                ['payouts', __('hakediş talebi bekliyor'), null, 'payouts.manage'],
+                ['payouts', __('hakediş talebi bekliyor'), 'admin.payouts.index', 'payouts.manage'],
             ] as [$key, $label, $route, $ability])
                 @if ($queues[$key] > 0)
                     @can($ability)

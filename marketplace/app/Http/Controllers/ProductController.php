@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Comment;
 use App\Models\Product;
 use App\Services\Catalog\ProductSearch;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ProductController extends Controller
@@ -35,9 +37,19 @@ class ProductController extends Controller
 
         $product->load(['creator.creatorProfile', 'category.parent', 'images', 'licenses.license', 'tags', 'versions']);
 
+        $user = $request->user();
+
         return view('products.show', [
             'product' => $product,
             'similar' => $search->query(['kategori' => $product->category->slug])->whereKeyNot($product->id)->limit(4)->get(),
+            'reviews' => $product->reviews()->where('status', 'published')->with('user:id,username,first_name')->latest()->limit(20)->get(),
+            'comments' => $product->comments()->whereNull('parent_id')->where('status', Comment::Published)
+                ->with(['user:id,username,first_name', 'replies.user:id,username,first_name'])->latest()->limit(30)->get(),
+            'state' => [
+                'liked' => $user !== null && DB::table('product_likes')->where(['user_id' => $user->id, 'product_id' => $product->id])->exists(),
+                'favorited' => $user !== null && DB::table('favorites')->where(['user_id' => $user->id, 'product_id' => $product->id])->exists(),
+                'myReview' => $user ? $product->reviews()->where('user_id', $user->id)->first() : null,
+            ],
         ]);
     }
 }

@@ -14,7 +14,7 @@
             </div>
         @endforeach
     </div>
-    <p class="mt-4 rounded-xl bg-surface-2 px-4 py-3 text-sm text-muted">{{ __('Creator kazançları puan cüzdanından ayrı tutulur ve USD bazlı hakediştir. Ödeme talebi için satıcı kimlik ve vergi doğrulaması gerekir; bu adım bir sonraki sürümde panele eklenecek.') }}</p>
+    <p class="mt-4 rounded-xl bg-surface-2 px-4 py-3 text-sm text-muted">{{ __('Creator kazançları puan cüzdanından ayrı tutulur ve USD bazlı hakediştir.') }} <a href="{{ route('creator.payouts') }}" class="font-semibold text-katman-700 hover:underline dark:text-katman-300">{{ __('Hakediş talebi oluştur') }} →</a></p>
 
     <h2 class="mt-10 mb-4 text-lg font-bold">{{ __('Kazanç hareketleri') }}</h2>
     @if ($earnings->isEmpty())

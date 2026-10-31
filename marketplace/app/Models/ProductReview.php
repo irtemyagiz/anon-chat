@@ -9,6 +9,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['rating', 'title', 'body'])]
 class ProductReview extends Model
 {
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'status' => 'published',
+    ];
+
     protected function casts(): array
     {
         return [
