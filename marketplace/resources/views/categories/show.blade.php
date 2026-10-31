@@ -18,6 +18,9 @@
             @if ($category->parent) / <a href="{{ route('categories.show', $category->parent) }}" class="hover:text-ink">{{ $category->parent->localizedName() }}</a>@endif
         </nav>
         <x-section-heading :eyebrow="__('Kategori')" :title="$category->localizedName()"/>
+        @if ($description = $category->description[app()->getLocale()] ?? $category->description['tr'] ?? null)
+            <p class="-mt-3 mb-6 max-w-3xl text-muted">{{ $description }}</p>
+        @endif
         @if ($category->children->isNotEmpty())
             <div class="mb-6 flex flex-wrap gap-2">
                 @foreach ($category->children as $child)
@@ -25,9 +28,13 @@
                 @endforeach
             </div>
         @endif
-        @include('partials.catalog-filters', ['action' => route('categories.show', $category), 'filters' => $filters])
+        @include('partials.catalog-filters', ['action' => route('categories.show', $category), 'filters' => $filters, 'formats' => $formats])
 
-        @if ($products->isEmpty())
+        @if ($products->isEmpty() && count($filters) > 1)
+            <x-empty-state icon="search" :title="__('Bu filtrelerle eşleşen model bulunamadı')" :description="__('Filtreleri değiştirmeyi veya daha genel bir arama yapmayı deneyin.')">
+                <a href="{{ route('categories.show', $category) }}" class="btn-secondary">{{ __('Filtreleri temizle') }}</a>
+            </x-empty-state>
+        @elseif ($products->isEmpty())
             <x-empty-state icon="layers" :title="__('Bu kategoride henüz model yok')" :description="__('Bu kategoriye ilk tasarımı yükleyen sen ol.')">
                 <a href="{{ route('upload') }}" class="btn-primary"><x-icon name="upload" class="size-4"/>{{ __('Tasarım yükle') }}</a>
                 <a href="{{ route('categories.index') }}" class="btn-secondary">{{ __('Diğer kategoriler') }}</a>

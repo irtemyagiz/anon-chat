@@ -44,6 +44,19 @@ class ProductActionController extends Controller
         return back()->with('status', __('Ürün yayından kaldırıldı. Daha önce satın alanlar dosyalara erişmeye devam eder.'));
     }
 
+    public function destroy(Product $product, ProductManager $products): RedirectResponse
+    {
+        $this->authorize('update', $product);
+
+        try {
+            $products->delete($product);
+        } catch (MarketplaceException $exception) {
+            return back()->withErrors(['submit' => $exception->getMessage()]);
+        }
+
+        return redirect()->route('creator.products.index')->with('status', __('Ürün silindi.'));
+    }
+
     public function destroyFile(Product $product, ProductFile $file, ProductManager $products): RedirectResponse
     {
         $this->authorize('update', $product);

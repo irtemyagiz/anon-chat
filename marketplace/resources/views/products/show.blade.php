@@ -134,9 +134,20 @@
                 <div class="card p-6">
                     <h1 class="text-2xl font-extrabold sm:text-3xl">{{ $product->title }}</h1>
                     @if ($store)
-                        <a href="{{ route('designers.show', $store) }}" class="mt-2 inline-flex items-center gap-2 text-sm text-muted hover:text-ink">
-                            <x-icon name="store" class="size-4"/> {{ $store->store_name }}
-                        </a>
+                        <div class="mt-2 flex flex-wrap items-center gap-3">
+                            <a href="{{ route('designers.show', $store) }}" class="inline-flex items-center gap-2 text-sm text-muted hover:text-ink">
+                                <x-icon name="store" class="size-4"/> {{ $store->store_name }}
+                            </a>
+                            @auth
+                                @unless ($isOwnProduct)
+                                    <form method="POST" action="{{ route('designers.follow', $store) }}" x-data="toggleAction(@js($state['following']))" @submit.prevent="send($el.action, 'following')">@csrf
+                                        <button class="chip hover:text-ink" :class="on && 'border-katman-500 text-katman-700 dark:text-katman-300'" x-text="on ? @js(__('Takip ediliyor')) : @js(__('Takip et'))">{{ $state['following'] ? __('Takip ediliyor') : __('Takip et') }}</button>
+                                    </form>
+                                @endunless
+                            @else
+                                <a href="{{ route('login') }}" class="chip hover:text-ink">{{ __('Takip et') }}</a>
+                            @endauth
+                        </div>
                     @endif
                     @if ($product->short_description)
                         <p class="mt-4 text-sm text-muted">{{ $product->short_description }}</p>
@@ -148,7 +159,7 @@
                         @elseif ($isOwnProduct)
                             <p class="text-sm text-muted">{{ __('Bu senin modelin.') }}</p>
                         @else
-                            <form method="POST" action="{{ route('products.purchase', $product) }}" x-data="{ confirming: false }" class="space-y-4">
+                            <form method="POST" action="{{ route('products.purchase', $product) }}" x-data="purchaseForm(@js(route('products.coupon', $product)), @js((string) old('coupon', '')))" @change="$event.target.name === 'license' && licenseChanged()" class="space-y-4">
                                 @csrf
                                 <input type="hidden" name="request_id" value="{{ Str::uuid() }}">
                                 @if ($activeLicenses->count() > 1)
@@ -171,6 +182,18 @@
                                     @if ($product->is_free)
                                         <button class="btn-primary w-full py-3"><x-icon name="download" class="size-4"/>{{ __('Kütüphaneme ekle') }}</button>
                                     @else
+                                        <div>
+                                            <button type="button" x-show="!couponOpen" @click="couponOpen = true; $nextTick(() => $refs.coupon.focus())" class="text-sm font-semibold text-katman-700 hover:underline dark:text-katman-300">{{ __('Kupon kodun var mı?') }}</button>
+                                            <div x-cloak x-show="couponOpen" class="space-y-2">
+                                                <label for="coupon" class="label">{{ __('Kupon kodu') }}</label>
+                                                <div class="flex gap-2">
+                                                    <input id="coupon" name="coupon" x-ref="coupon" x-model="coupon" maxlength="40" class="input uppercase" autocomplete="off" @keydown.enter.prevent="applyCoupon()">
+                                                    <button type="button" @click="applyCoupon()" :disabled="checking" class="btn-secondary shrink-0">{{ __('Uygula') }}</button>
+                                                </div>
+                                                <p x-show="couponMessage" x-text="couponMessage" class="text-xs" :class="couponValid ? 'text-katman-700 dark:text-katman-300' : 'text-red-600 dark:text-red-400'" role="status"></p>
+                                                <div x-show="priceHtml" x-html="priceHtml"></div>
+                                            </div>
+                                        </div>
                                         <button type="button" x-show="!confirming" @click="confirming = true" class="btn-primary w-full py-3">{{ __('Satın al') }}</button>
                                         <div x-cloak x-show="confirming" class="space-y-2 rounded-xl bg-surface-2 p-3 text-sm">
                                             <p>{{ __('Puan bakiyenden düşülecek. Onaylıyor musun?') }}</p>
@@ -262,7 +285,7 @@
                 @if ($product->tags->isNotEmpty())
                     <div class="mt-6 flex flex-wrap gap-2">
                         @foreach ($product->tags as $tag)
-                            <a href="{{ route('products.index', ['q' => $tag->name]) }}" class="chip hover:text-ink">#{{ $tag->name }}</a>
+                            <a href="{{ route('products.index', ['etiket' => $tag->slug]) }}" class="chip hover:text-ink">#{{ $tag->name }}</a>
                         @endforeach
                     </div>
                 @endif
@@ -278,10 +301,16 @@
                         __('Baskı süresi') => $product->print_time_minutes ? __(':h sa :m dk', ['h' => intdiv($product->print_time_minutes, 60), 'm' => $product->print_time_minutes % 60]) : null,
                         __('Boyutlar (mm)') => $product->dimension_x_mm ? "{$product->dimension_x_mm} × {$product->dimension_y_mm} × {$product->dimension_z_mm}" : null,
                         __('Yazıcı uyumluluğu') => $product->printer_compatibility,
+                        __('Baskı teknolojisi') => $product->print_technology ? strtoupper($product->print_technology) : null,
+                        __('Katman yüksekliği (mm)') => $product->print_settings['layer_height_mm'] ?? null,
+                        __('Doluluk (%)') => $product->print_settings['infill_percent'] ?? null,
                     ]) as $label => $value)
                         <div class="flex justify-between gap-4 py-2.5"><dt class="text-muted">{{ $label }}</dt><dd class="text-right font-medium">{{ $value }}</dd></div>
                     @endforeach
                 </dl>
+                @if (filled($product->print_settings['notes'] ?? null))
+                    <div class="mt-4 rounded-xl bg-surface-2 p-4 text-sm"><p class="font-semibold">{{ __('Baskı önerileri') }}</p><p class="mt-1 whitespace-pre-line text-muted">{{ $product->print_settings['notes'] }}</p></div>
+                @endif
             </section>
         </div>
 

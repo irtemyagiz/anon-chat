@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Comment;
+use App\Models\FileFormat;
 use App\Models\Product;
+use App\Models\Tag;
 use App\Services\Catalog\ProductSearch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,12 +16,14 @@ class ProductController extends Controller
 {
     public function index(Request $request, ProductSearch $search): View
     {
-        $filters = $request->only('q', 'kategori', 'fiyat', 'sirala', 'min', 'max');
+        $filters = array_filter($request->only(ProductSearch::FILTERS), fn ($value) => is_string($value) && $value !== '');
 
         return view('products.index', [
             'products' => $search->paginate($filters),
             'filters' => $filters,
             'categories' => Category::query()->whereNull('parent_id')->where('is_active', true)->orderBy('sort_order')->get(),
+            'formats' => FileFormat::query()->where('is_active', true)->orderBy('extension')->pluck('extension')->all(),
+            'tagName' => isset($filters['etiket']) ? Tag::query()->where('slug', $filters['etiket'])->value('name') : null,
         ]);
     }
 
@@ -49,6 +53,7 @@ class ProductController extends Controller
                 'liked' => $user !== null && DB::table('product_likes')->where(['user_id' => $user->id, 'product_id' => $product->id])->exists(),
                 'favorited' => $user !== null && DB::table('favorites')->where(['user_id' => $user->id, 'product_id' => $product->id])->exists(),
                 'myReview' => $user ? $product->reviews()->where('user_id', $user->id)->first() : null,
+                'following' => $user !== null && DB::table('follows')->where(['follower_id' => $user->id, 'creator_id' => $product->creator_id])->exists(),
             ],
         ]);
     }

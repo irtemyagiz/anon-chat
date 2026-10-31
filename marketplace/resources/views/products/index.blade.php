@@ -1,6 +1,7 @@
 @php
     $heading = match (true) {
         filled($filters['q'] ?? null) => __('“:q” için sonuçlar', ['q' => $filters['q']]),
+        filled($tagName) => __('#:tag etiketli modeller', ['tag' => $tagName]),
         ($filters['fiyat'] ?? null) === 'ucretsiz' => __('Ücretsiz modeller'),
         ($filters['sirala'] ?? null) === 'populer' => __('Popüler modeller'),
         ($filters['sirala'] ?? null) === 'yeni' => __('Yeni modeller'),
@@ -10,7 +11,7 @@
 <x-layouts.app :title="$heading">
     <div class="container-page py-12">
         <x-section-heading :eyebrow="__('Katalog')" :title="$heading"/>
-        @include('partials.catalog-filters', ['action' => route('products.index'), 'filters' => $filters, 'categories' => $categories])
+        @include('partials.catalog-filters', ['action' => route('products.index'), 'filters' => $filters, 'categories' => $categories, 'formats' => $formats])
 
         @if ($products->isEmpty())
             @if (array_filter($filters))

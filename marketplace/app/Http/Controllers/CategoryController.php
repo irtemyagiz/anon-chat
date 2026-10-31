@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\FileFormat;
 use App\Services\Catalog\ProductSearch;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -26,12 +27,16 @@ class CategoryController extends Controller
     {
         abort_unless($category->is_active, 404);
 
-        $filters = [...$request->only('fiyat', 'sirala'), 'kategori' => $category->slug];
+        $filters = [
+            ...array_filter($request->only(array_diff(ProductSearch::FILTERS, ['q', 'kategori'])), fn ($value) => is_string($value) && $value !== ''),
+            'kategori' => $category->slug,
+        ];
 
         return view('categories.show', [
             'category' => $category->load(['parent', 'children' => fn ($q) => $q->where('is_active', true)]),
             'products' => $search->paginate($filters),
             'filters' => $filters,
+            'formats' => FileFormat::query()->where('is_active', true)->orderBy('extension')->pluck('extension')->all(),
         ]);
     }
 }

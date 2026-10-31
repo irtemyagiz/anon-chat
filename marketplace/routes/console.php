@@ -3,6 +3,7 @@
 use App\Enums\CreatorStatus;
 use App\Models\Product;
 use App\Models\Role;
+use App\Models\UploadSession;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Currency\ExchangeRateService;
@@ -11,6 +12,7 @@ use App\Services\Products\ProductManager;
 use App\Services\Settings\SettingsService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 Artisan::command('marketplace:refresh-exchange-rates {--force : Otomatik güncelleme kapalı olsa da çalıştır}', function (ExchangeRateService $rates, SettingsService $settings): int {
@@ -44,6 +46,21 @@ Schedule::command('marketplace:refresh-exchange-rates')
     ->withoutOverlapping();
 
 Schedule::command('marketplace:release-earnings')->hourly()->withoutOverlapping();
+
+Artisan::command('marketplace:prune-uploads', function (): void {
+    $expired = UploadSession::query()->where('expires_at', '<=', now())->get();
+    $expired->each->discard();
+
+    /** Oturumu olmayan artık parça dosyaları (ör. veritabanı geri yüklendiyse) da silinir. */
+    $known = UploadSession::query()->pluck('id')->flip();
+    $orphans = collect(Storage::disk('local')->files('chunks'))
+        ->filter(fn (string $path) => ! $known->has(basename($path, '.part')) && Storage::disk('local')->lastModified($path) < now()->subDay()->getTimestamp());
+    Storage::disk('local')->delete($orphans->all());
+
+    $this->info($expired->count().' süresi dolan yükleme oturumu ve '.$orphans->count().' artık parça dosyası silindi.');
+})->purpose('Tamamlanmamış ve süresi dolmuş parçalı yüklemeleri temizler');
+
+Schedule::command('marketplace:prune-uploads')->hourly()->withoutOverlapping();
 
 Artisan::command('marketplace:make-admin {email : Yönetici yapılacak kullanıcının e-posta adresi}', function (string $email): int {
     $user = User::query()->where('email', Str::lower($email))->first();

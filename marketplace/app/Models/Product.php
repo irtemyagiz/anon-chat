@@ -40,6 +40,7 @@ class Product extends Model
     protected $attributes = [
         'status' => 'draft',
         'price_cents' => 0,
+        'preview_auto_generated' => false,
     ];
 
     protected function casts(): array
@@ -50,6 +51,7 @@ class Product extends Model
             'is_featured' => 'boolean',
             'print_settings' => 'array',
             'requires_supports' => 'boolean',
+            'preview_auto_generated' => 'boolean',
             'published_at' => 'datetime',
             'dimension_x_mm' => 'decimal:2',
             'dimension_y_mm' => 'decimal:2',

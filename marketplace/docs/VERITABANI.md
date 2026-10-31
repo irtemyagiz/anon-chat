@@ -2,7 +2,7 @@
 
 MySQL 8 / MariaDB 10.4+ (XAMPP) için tasarlanmıştır. Testler SQLite (bellek içi)
 ve MariaDB 10.11 üzerinde çalıştırılmıştır. Migration dosyaları:
-`database/migrations/2026_10_30_*`.
+`database/migrations/2026_10_30_*` (ilk şema) ve `2026_10_31_*` (sonraki eklemeler).
 
 ## Genel kurallar
 
@@ -35,13 +35,14 @@ ve MariaDB 10.11 üzerinde çalıştırılmıştır. Migration dosyaları:
 | `tags`, `product_tags` | Etiketler |
 | `licenses` | Lisans türleri (kişisel, ticari) |
 | `file_formats` | Yönetilebilir dosya formatları: uzantı, izinli MIME türleri, arşiv/önizleme bayrakları |
-| `products` | Ürün: başlık, slug, açıklama, `price_cents`, `is_free`, durum, baskı bilgileri, boyutlar, sayaçlar, SEO |
+| `products` | Ürün: başlık, slug, açıklama, `price_cents`, `is_free`, durum, baskı bilgileri, boyutlar, sayaçlar, SEO. `preview_model_path` herkese açık 3D önizleme; `preview_auto_generated` önizlemenin STL'den otomatik sadeleştirilerek üretildiğini gösterir |
 | `product_categories` | Ek kategoriler |
 | `product_licenses` | Ürünün lisans bazında fiyatı. (`product_id`, `license_id`) unique |
 | `product_versions` | Sürüm geçmişi ve değişiklik notları |
 | `product_files` | İndirilebilir dosyalar: disk, gizli yol, boyut, SHA-256, tarama durumu |
 | `product_images` | Galeri görselleri ve boyut varyantları (WebP/AVIF) |
 | `product_reports` | Telif hakkı ve içerik şikâyetleri |
+| `upload_sessions` | Parçalı (chunked) büyük dosya yüklemeleri: UUID, creator, ürün, bildirilen boyut, alınan bayt, son kullanma. Parçalar yerel diskte `chunks/{id}.part` dosyasında birleşir; süresi dolanlar saatlik görevle silinir |
 
 `products` indeksleri: `(status, published_at)`, `(creator_id, status)`, `price_cents`,
 `is_free`, `is_featured`, `print_technology`.

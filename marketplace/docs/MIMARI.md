@@ -133,7 +133,10 @@ kilitliyken** çalışır:
 1. Ürün yayında mı, alıcı aktif mi, kendi ürünü değil mi?
 2. Aynı idempotency anahtarıyla sipariş varsa onu döndür (çift tıklama koruması).
 3. Aynı ürün + lisans için aktif hak varsa `AlreadyOwnedException`.
-4. Kupon kilitlenir ve doğrulanır, indirim uygulanır.
+4. Kupon kilitlenir ve doğrulanır, indirim uygulanır. Ürün sayfasındaki "Uygula"
+   düğmesi `PurchaseService::previewCoupon` ile indirimli tutarı önceden gösterir;
+   önizleme kuponu kullanmaz. Kupon indirimi creator'ın payından düşer (komisyon
+   indirimli tutar üzerinden hesaplanır). Kullanılmış kupon silinemez, yalnızca durdurulur.
 5. Bakiye yetersizse `InsufficientPointsException` fırlatılır; eksik tutar `shortfall()`
    ile alınır ve arayüz minimum yükleme paketini önerir. Mevcut puanlar silinmez.
 6. Komisyon oranı belirlenir: **kampanya > creator > kategori (üst kategorilere doğru) > varsayılan**.
@@ -190,8 +193,19 @@ anında IP'ye göre değil hesap bilgisine göre fiyatlandırılır.
   bucket'ında, ürün UUID'si altında **rastgele adlarla** tutulur. Orijinal ad yalnızca
   indirme sırasında gösterilir. `public_html` altında hiçbir ürün dosyası bulunmaz.
 - `ProductFile` modelinde `disk` ve `path` alanları gizlidir (JSON çıktısına girmez).
-- Herkese açık olan yalnızca görseller ve creator'ın ayrıca yüklediği **3D önizleme
-  dosyasıdır**. Satılan dosyalar hiçbir zaman önizleme olarak sunulmaz.
+- Herkese açık olan yalnızca görseller ve **3D önizleme dosyasıdır**. Satılan dosyalar
+  hiçbir zaman önizleme olarak sunulmaz.
+- **Otomatik önizleme** (`GeneratePreviewModel` + `StlDecimator`): creator önizleme
+  yüklemezse, taraması temiz çıkan ilk STL dosyasından vertex clustering ile kaba bir
+  önizleme üretilir. Model en uzun kenarı 80 hücreye bölünen ızgaraya indirgenir
+  (`AUTO_PREVIEW_GRID`), en fazla 60.000 üçgen; hücreden küçük ayrıntılar kaybolduğu
+  için önizleme baskı kalitesinde değildir. 200 MB üzerindeki dosyalar atlanır.
+  Creator kendi önizlemesini yüklerse otomatik olanın yerini alır.
+- **Parçalı yükleme** (`ChunkedUploadController`): ürün düzenleme sayfasında dosyalar
+  4 MB'lık parçalar hâlinde gönderilir; sunucunun `upload_max_filesize` sınırı yalnızca
+  parça için geçerlidir. Her parça, sunucunun aldığı bayt sayısıyla (`offset`) eşleşmek
+  zorundadır ve dosya kilidi altında eklenir; bağlantı koparsa aynı dosya seçilince
+  kalınan yerden devam edilir. Tamamlanan dosya normal yüklemeyle aynı kontrollerden geçer.
 
 **Yükleme doğrulaması** (`UploadInspector`, HTTP isteği sırasında)
 1. Uzantı, yönetim panelinde aktif olan `file_formats` listesinde olmalı.
@@ -222,9 +236,10 @@ WebP'ye çevirir.
 kaydı → dosya özel diskten akıtılır.
 
 **Ürün yaşam döngüsü**: `draft` → (görsel + dosya + açıklama zorunlu) → `pending_review`
-→ yönetici onayı → `published`. Reddedilen ürün not ile `rejected` olur. Yayından
-kaldırılan ürünü önceden satın alanlar indirmeye devam eder. Onay şimdilik
-`php artisan marketplace:approve-product {slug}` ile yapılır; yönetim paneline taşınacak.
+→ yönetici onayı (Yönetim paneli → Ürün moderasyonu) → `published`. Reddedilen ürün not
+ile `rejected` olur. Yayından kaldırılan ürünü önceden satın alanlar indirmeye devam eder.
+Yayındaki üründe sürüm numarası değişirse sürüm notu kaydedilir ve satın alanlara
+bildirim gider. Satışı veya indirme hakkı olan ürün silinemez, yalnızca yayından kaldırılır.
 
 ## 9. Güvenlik özeti
 
@@ -249,28 +264,28 @@ kaldırılan ürünü önceden satın alanlar indirmeye devam eder. Onay şimdil
 | Faz | Durum |
 |---|---|
 | 1. Proje kurulumu | ✅ Laravel 13, yapılandırma, private disk |
-| 2. Veritabanı mimarisi | ✅ 11 migration, 70 tablo (Laravel sistem tabloları dahil), SQLite ve MariaDB 10.11 üzerinde doğrulandı |
+| 2. Veritabanı mimarisi | ✅ 15 migration, 71 tablo (Laravel sistem tabloları dahil), SQLite ve MariaDB 10.11 üzerinde doğrulandı |
 | 3. Kayıt ve giriş | ✅ Kayıt, giriş (5 hatalı denemede kilit), e-posta doğrulama, şifre sıfırlama, askıya alınmış hesap engeli |
-| 4. Creator hesabı | ✅ Ayrı kayıt sayfası, mevcut hesabı yükseltme, başvuru durumu (onay: şimdilik konsol komutu) |
+| 4. Creator hesabı | ✅ Ayrı kayıt sayfası, mevcut hesabı yükseltme, başvuru durumu, yönetim panelinden onay |
 | 5. Tasarım sistemi | ✅ "Katman" kimliği, renk/tipografi tokenları, açık/koyu tema (tercih saklanır), mobil menü |
 | 6. Ana sayfa | ✅ Tüm bölümler, katalog boşken profesyonel boş durum ekranı |
-| 7. Kategoriler | ✅ Liste ve kategori sayfası (alt kategoriler dahil filtreleme) |
-| 8. Ürün yükleme | ✅ Görseller, indirilebilir dosyalar, 3D önizleme, lisanslar, baskı bilgileri, SEO; doğrulama + tarama; inceleme akışı |
-| 9. Ürün detay | 🟡 Görsel galerisi + tam ekran, 3D önizleme, video, lisans seçimi, satın alma, teknik bilgiler, güncelleme geçmişi, benzer modeller. Yorumlar Faz 22'de |
+| 7. Kategoriler | ✅ Liste ve kategori sayfası (alt kategoriler dahil filtreleme), kategori görseli, TR/EN açıklama ve SEO alanları |
+| 8. Ürün yükleme | ✅ Görseller, indirilebilir dosyalar, 3D önizleme, lisanslar, baskı bilgileri, SEO; doğrulama + tarama; inceleme akışı; parçalı ve devam ettirilebilir büyük dosya yükleme; STL'den otomatik kaba önizleme; sürüm notu; satışsız ürünü silme |
+| 9. Ürün detay | ✅ Görsel galerisi + tam ekran, 3D önizleme, video, lisans seçimi, kupon önizlemeli satın alma, teknik bilgiler ve baskı önerileri, güncelleme geçmişi, mağaza takibi, değerlendirme ve yorumlar, benzer modeller |
 | 10. 3D görüntüleyici | ✅ Three.js; STL/OBJ/3MF; döndürme, yakınlaştırma, ışık, arka plan, ortalama, tabla, tam ekran; sekme açılınca tembel yüklenir |
 | 11. Puan cüzdanı | ✅ Servis + cüzdan sayfası (bakiye, toplamlar, işlem geçmişi) |
 | 12. Döviz kuru servisi | ✅ Sağlayıcı, geçmiş, manuel kur, sapma koruması, zamanlayıcı |
 | 13. Puan yükleme | ✅ Paket seçimi → sağlayıcı → imzalı webhook → sonuç sayfası (sandbox ile uçtan uca) |
 | 15. Satın alma | ✅ Onay adımı, yetersiz bakiyede eksik puanla yükleme sayfasına yönlendirme |
 | 16. Güvenli indirme | ✅ Hak kontrolü, 10 dakikalık imzalı bağlantı, tarama durumu kontrolü, indirme kaydı |
-| 17. Creator paneli | 🟡 Genel bakış (8 kart + 30 günlük satış grafiği), ürünlerim, ürün formu, satışlar, gelirler, hakedişler, yorumlar (değerlendirmelere yanıt), takipçiler, mağaza ayarları. Kupon yönetimi ve bildirimler sonra |
+| 17. Creator paneli | ✅ Genel bakış (8 kart + 30 günlük satış grafiği), ürünlerim, ürün formu, istatistikler (günlük/haftalık/aylık satış, gelir, indirme, takipçi; ürün bazında dönüşüm), satışlar, gelirler, hakedişler, kuponlar (yüzde/sabit, ürün, limit, tarih), yorumlar, takipçiler, mağaza ayarları |
 | 18–19. Komisyon, hakediş, ödeme talebi | ✅ Satıcı doğrulama (T.C. kimlik no sağlaması, şifreli saklama, belge), ülkeye göre ödeme yöntemi (TR: IBAN/TL, diğer: SWIFT/Wise/Payoneer USD), IBAN mod-97 doğrulaması, rezerv; yönetici: doğrulama onayı, talep onay/ret, TL ödemede kur kaydı, hesap bilgisi görüntüleme denetimi |
 | 20. Favoriler ve koleksiyonlar | ✅ Favori, beğeni (sayaç tutarlı), koleksiyon (herkese açık/gizli, ürün sayfasından ekleme), ana sayfada koleksiyonlar |
 | 21. Takip sistemi | ✅ Mağaza takibi, takip ettiklerim, creator takipçi listesi |
 | 22. Yorum ve değerlendirme | ✅ Yıldızlı değerlendirme yalnızca ürünü edinenler; satın alanlara "doğrulanmış satın alma" rozeti; creator yanıtı; yorum + yanıt; spam koruması; 3 şikâyette otomatik gizleme; içerik/telif şikâyeti (ziyaretçi e-postayla); yönetici moderasyonu |
-| 25. Yönetim paneli | 🟡 Dashboard (11 metrik + bekleyen işler), creator başvuruları, ürün moderasyonu (onay/ret/yayından kaldırma/öne çıkarma), kullanıcılar (arama, askıya alma, rol, puan düzeltme, işlem ve satın alma geçmişi), puan paketleri + minimum yükleme + ekonomi raporu, ödemeler (iade, sağlayıcılar, webhook kayıtları, itirazlar), döviz kuru (manuel/otomatik/geçmiş/sağlayıcı kayıtları), komisyon (varsayılan + creator/kategori/kampanya kuralları), kategoriler, dosya formatları, loglar. Hakediş yönetimi, içerik/SEO ve sistem ayarları sonra |
-| 23. Arama ve filtreleme | 🟡 Metin, kategori, ücretli/ücretsiz, sıralama. Format/lisans/teknoloji filtreleri ve anlık öneriler sonra |
-| 29. Otomatik testler | ✅ 193 test + 2 eşzamanlılık testi |
+| 25. Yönetim paneli | ✅ Dashboard (11 metrik + bekleyen işler), creator başvuruları, ürün moderasyonu (onay/ret/yayından kaldırma/öne çıkarma), kullanıcılar (arama, askıya alma, rol, puan düzeltme, işlem ve satın alma geçmişi), puan paketleri + minimum yükleme + ekonomi raporu, ödemeler (iade, sağlayıcılar, webhook kayıtları, itirazlar), döviz kuru (manuel/otomatik/geçmiş/sağlayıcı kayıtları), komisyon (varsayılan + creator/kategori/kampanya kuralları), kategoriler (görsel, TR/EN SEO), dosya formatları, hakedişler ve satıcı doğrulamaları, içerik/SEO, sistem ayarları, destek, loglar |
+| 23. Arama ve filtreleme | ✅ Metin, kategori, etiket, ücretli/ücretsiz, dosya formatı, ticari lisans, baskı teknolojisi, USD fiyat aralığı; 8 sıralama; başlıkta yazarken ürün/tasarımcı/kategori/etiket önerileri (klavyeyle gezinme) |
+| 29. Otomatik testler | ✅ 213 test + 2 eşzamanlılık testi (SQLite ve MariaDB) |
 | 24. Bildirimler | ✅ 17 tür; site içi + kategori bazlı e-posta tercihi; yönetici uyarıları izne göre |
 | 26. SEO ve çok dillilik | ✅ Sitemap (bölümlü), robots.txt, JSON-LD (Product, BreadcrumbList, WebSite+SearchAction, Organization, ProfilePage), og:image, hreflang + ?lang=en, sayfa bazında meta ayarları; Türkçe/İngilizce arayüz (yönetim paneli Türkçe), çeviri kapsamı testi |
 | — İçerik, destek, KVKK | ✅ Sayfa/blog/SSS/banner yönetimi, yasal metin taslakları (TR+EN, hukuki inceleme gerekli), sistem/SMTP/bakım modu ayarları, destek talepleri ve puan iadesi talebi, hesap silme (anonimleştirme) |

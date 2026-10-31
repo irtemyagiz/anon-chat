@@ -68,7 +68,7 @@ class PurchaseService
         $this->assertPurchasable($buyer, $product);
 
         if ($license->price_cents === 0) {
-            throw new MarketplaceException('Ücretsiz ürünler satın alınmaz, doğrudan indirilir.');
+            throw new MarketplaceException(__('Ücretsiz ürünler satın alınmaz, doğrudan indirilir.'));
         }
 
         $existing = Order::query()->where('idempotency_key', $this->orderKey($buyer, $idempotencyKey))->first();
@@ -168,7 +168,7 @@ class PurchaseService
         $license = $this->resolveLicense($product, null);
 
         if ($license->price_cents !== 0) {
-            throw new MarketplaceException('Bu ürün ücretsiz değil.');
+            throw new MarketplaceException(__('Bu ürün ücretsiz değil.'));
         }
 
         return DB::transaction(fn (): PurchaseEntitlement => $this->grantEntitlement($user, $product, $license->license_id, EntitlementSource::Free));
@@ -185,7 +185,7 @@ class PurchaseService
             $item = OrderItem::query()->lockForUpdate()->findOrFail($item->id);
 
             if ($item->status === OrderItemStatus::Refunded) {
-                throw new MarketplaceException('Bu satış zaten iade edilmiş.');
+                throw new MarketplaceException(__('Bu satış zaten iade edilmiş.'));
             }
 
             $order = $item->order;
@@ -261,15 +261,15 @@ class PurchaseService
     private function assertPurchasable(User $buyer, Product $product, bool $allowOwnProduct = false): void
     {
         if (! $product->isPublished()) {
-            throw new MarketplaceException('Bu ürün şu anda satışta değil.');
+            throw new MarketplaceException(__('Bu ürün şu anda satışta değil.'));
         }
 
         if (! $buyer->isActive()) {
-            throw new MarketplaceException('Hesabınız aktif olmadığı için işlem yapılamıyor.');
+            throw new MarketplaceException(__('Hesabınız aktif olmadığı için işlem yapılamıyor.'));
         }
 
         if (! $allowOwnProduct && $buyer->id === $product->creator_id) {
-            throw new MarketplaceException('Kendi ürününüzü satın alamazsınız.');
+            throw new MarketplaceException(__('Kendi ürününüzü satın alamazsınız.'));
         }
     }
 
@@ -278,10 +278,28 @@ class PurchaseService
         $license ??= $product->licenses()->where('is_active', true)->orderByDesc('is_default')->first();
 
         if ($license === null || $license->product_id !== $product->id || ! $license->is_active) {
-            throw new MarketplaceException('Geçerli bir lisans seçilmedi.');
+            throw new MarketplaceException(__('Geçerli bir lisans seçilmedi.'));
         }
 
         return $license;
+    }
+
+    /**
+     * Satın alma öncesi kupon önizlemesi: kupon geçerliyse indirimli tutarı döndürür.
+     * Kupon kullanım sayısı değişmez; asıl kontrol satın alma anında kilitle tekrar yapılır.
+     *
+     * @return array{list_points: int, discount_points: int, total_points: int}
+     *
+     * @throws MarketplaceException
+     */
+    public function previewCoupon(Product $product, ?ProductLicense $license, string $code): array
+    {
+        $license = $this->resolveLicense($product, $license);
+        $coupon = $this->validCoupon($product, $code, lock: false);
+        $listPoints = $license->pricePoints();
+        $discountPoints = $this->discountPoints($listPoints, $product, $coupon);
+
+        return ['list_points' => $listPoints, 'discount_points' => $discountPoints, 'total_points' => $listPoints - $discountPoints];
     }
 
     private function lockCoupon(Product $product, ?string $code): ?Coupon
@@ -290,22 +308,26 @@ class PurchaseService
             return null;
         }
 
+        return $this->validCoupon($product, $code, lock: true);
+    }
+
+    /**
+     * @throws MarketplaceException
+     */
+    private function validCoupon(Product $product, string $code, bool $lock): Coupon
+    {
         $coupon = Coupon::query()
             ->where('creator_id', $product->creator_id)
-            ->where('code', strtoupper(trim($code)))
-            ->lockForUpdate()
+            ->where('code', Coupon::normalizeCode($code))
+            ->when($lock, fn ($query) => $query->lockForUpdate())
             ->first();
 
-        $now = now();
         $valid = $coupon !== null
-            && $coupon->is_active
             && ($coupon->product_id === null || $coupon->product_id === $product->id)
-            && ($coupon->starts_at === null || $coupon->starts_at->lte($now))
-            && ($coupon->ends_at === null || $coupon->ends_at->gt($now))
-            && ($coupon->max_redemptions === null || $coupon->redemptions_count < $coupon->max_redemptions);
+            && $coupon->isUsable();
 
         if (! $valid) {
-            throw new MarketplaceException('Kupon kodu geçersiz veya süresi dolmuş.');
+            throw new MarketplaceException(__('Kupon kodu geçersiz veya süresi dolmuş.'));
         }
 
         return $coupon;
@@ -317,7 +339,7 @@ class PurchaseService
             return 0;
         }
 
-        $discount = $coupon->discount_type === 'percent'
+        $discount = $coupon->discount_type === Coupon::Percent
             ? intdiv($listPoints * min(10_000, $coupon->discount_value), 10_000)
             : PointConverter::usdCentsToPoints($coupon->discount_value);
 

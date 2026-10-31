@@ -10,11 +10,13 @@ use App\Models\Product;
 use App\Models\ProductFile;
 use App\Models\ProductImage;
 use App\Models\User;
+use App\Notifications\ProductUpdatedNotification;
 use App\Services\Files\Scanners\FileScanner;
 use App\Services\Files\Scanners\ScanResult;
 use App\Services\Sales\PurchaseService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Tests\Concerns\InteractsWithMarketplace;
@@ -73,7 +75,7 @@ class CreatorPanelTest extends TestCase
         $this->actingAs(User::factory()->creator(CreatorStatus::Suspended)->create())->get(route('creator.products.create'))->assertRedirect(route('creator.status'));
 
         $creator = User::factory()->creator()->create();
-        foreach (['creator.dashboard', 'creator.products.index', 'creator.products.create', 'creator.sales', 'creator.earnings', 'creator.store.edit'] as $route) {
+        foreach (['creator.dashboard', 'creator.products.index', 'creator.products.create', 'creator.sales', 'creator.earnings', 'creator.store.edit', 'creator.statistics', 'creator.coupons.index'] as $route) {
             $this->actingAs($creator)->get(route($route))->assertOk();
         }
     }
@@ -111,6 +113,32 @@ class CreatorPanelTest extends TestCase
         $image = $product->images()->sole();
         $this->assertStringEndsWith('.webp', $image->path, 'Görseller yeniden kodlanır');
         $this->assertSame($image->path, $product->cover_image_path);
+    }
+
+    public function test_coarse_preview_is_generated_from_clean_stl_when_creator_uploads_none(): void
+    {
+        $creator = User::factory()->creator()->create();
+        $this->createProduct($creator, ['files' => [$this->stl()]])->assertRedirect()->assertSessionHasNoErrors();
+
+        $product = Product::query()->sole();
+        $this->assertTrue($product->preview_auto_generated);
+        Storage::disk('public')->assertExists($product->preview_model_path);
+        $this->assertNotSame(
+            file_get_contents(base_path('tests/Fixtures/cube.stl')),
+            Storage::disk('public')->get($product->preview_model_path),
+            'Satılan dosya public diske kopyalanmaz'
+        );
+
+        $this->put(route('creator.products.update', $product), $this->productData(['preview' => $this->stl('kendi.stl')]))->assertSessionHasNoErrors();
+        $product->refresh();
+        $this->assertFalse($product->preview_auto_generated, 'Creator önizlemesi otomatik olanın yerini alır');
+
+        $this->delete(route('creator.products.preview.destroy', $product));
+        $this->assertNull($product->fresh()->preview_model_path, 'Kaldırılan önizleme kendiliğinden geri gelmez');
+
+        config(['marketplace.storage.auto_preview.max_source_mb' => 0]);
+        $this->createProduct($creator, ['title' => 'Büyük dosyalı ürün', 'files' => [$this->stl()]]);
+        $this->assertNull(Product::query()->where('title', 'Büyük dosyalı ürün')->sole()->preview_model_path, 'Sınırı aşan dosyadan önizleme üretilmez');
     }
 
     public function test_product_goes_through_review_before_publishing(): void
@@ -257,6 +285,50 @@ class CreatorPanelTest extends TestCase
         $this->actingAs($creator)->get(route('creator.dashboard'))->assertOk()->assertSee('$8.00');
         $this->get(route('creator.sales'))->assertSee($product->title)->assertSee('$2.00');
         $this->get(route('creator.earnings'))->assertSee('$8.00');
+    }
+
+    public function test_new_version_is_recorded_and_owners_are_notified(): void
+    {
+        Notification::fake();
+        $creator = User::factory()->creator()->create();
+        $product = $this->publishedProduct(500, $creator);
+        $buyer = User::factory()->create();
+        $this->givePoints($buyer, 500);
+        app(PurchaseService::class)->purchase($buyer, $product, null, 'k');
+
+        $this->actingAs($creator)->put(route('creator.products.update', $product), $this->productData([
+            'title' => $product->title,
+            'current_version' => '1.1',
+            'changelog' => 'Menteşe toleransı artırıldı.',
+        ]))->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('product_versions', ['product_id' => $product->id, 'version' => '1.1', 'changelog' => 'Menteşe toleransı artırıldı.']);
+        Notification::assertSentTo($buyer, ProductUpdatedNotification::class, fn (ProductUpdatedNotification $notification) => $notification->version === '1.1');
+        Notification::assertNotSentTo($creator, ProductUpdatedNotification::class);
+
+        $this->get(route('products.show', $product->fresh()))->assertSee('Menteşe toleransı artırıldı.');
+    }
+
+    public function test_product_without_sales_can_be_deleted_but_sold_product_cannot(): void
+    {
+        $creator = User::factory()->creator()->create();
+        $this->createProduct($creator);
+        $draft = Product::query()->sole();
+
+        $this->delete(route('creator.products.destroy', $draft))->assertRedirect(route('creator.products.index'));
+        $this->assertSoftDeleted($draft);
+
+        $sold = $this->publishedProduct(500, $creator);
+        $buyer = User::factory()->create();
+        $this->givePoints($buyer, 500);
+        app(PurchaseService::class)->purchase($buyer, $sold, null, 'k2');
+
+        $this->actingAs($creator)->delete(route('creator.products.destroy', $sold))->assertSessionHasErrors('submit');
+        $this->assertNotSoftDeleted($sold);
+
+        $intruder = User::factory()->creator()->create();
+        $other = $this->publishedProduct(500, $creator);
+        $this->actingAs($intruder)->delete(route('creator.products.destroy', $other))->assertForbidden();
     }
 
     public function test_store_settings_update_with_social_link_validation(): void

@@ -6,7 +6,7 @@
                 <div class="card p-5">
                     <a href="{{ route('categories.show', $category) }}" class="group flex items-center justify-between gap-4">
                         <span class="flex items-center gap-3">
-                            <span class="flex size-11 items-center justify-center rounded-xl bg-surface-2 text-katman-700 transition group-hover:bg-katman-600 group-hover:text-white dark:text-katman-300"><x-icon name="layers"/></span>
+                            @if ($category->image_path)<img src="{{ Storage::disk(config('marketplace.storage.public_media_disk'))->url($category->image_path) }}" alt="" class="size-11 rounded-xl object-cover" loading="lazy">@else<span class="flex size-11 items-center justify-center rounded-xl bg-surface-2 text-katman-700 transition group-hover:bg-katman-600 group-hover:text-white dark:text-katman-300"><x-icon name="layers"/></span>@endif
                             <span>
                                 <span class="block font-bold text-ink">{{ $category->localizedName() }}</span>
                                 <span class="text-xs text-subtle">{{ trans_choice(':count model|:count model', $category->products_count, ['count' => $category->products_count]) }}</span>

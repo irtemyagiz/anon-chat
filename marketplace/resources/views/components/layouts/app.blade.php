@@ -55,10 +55,7 @@
             @if ($siteLogo)<img src="{{ $siteLogo }}" alt="{{ config('app.name') }}" class="h-8 w-auto">@else<x-logo/>@endif
         </a>
 
-        <form action="{{ route('products.index') }}" method="GET" role="search" class="relative hidden max-w-md flex-1 md:block">
-            <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle"/>
-            <input type="search" name="q" value="{{ request('q') }}" placeholder="{{ __('Model, etiket veya tasarımcı ara…') }}" class="input rounded-full pl-9" aria-label="{{ __('Ara') }}">
-        </form>
+        @include('partials.search-suggest', ['formClass' => 'relative hidden max-w-md flex-1 md:block', 'inputClass' => 'input rounded-full pl-9', 'placeholder' => __('Model, etiket veya tasarımcı ara…')])
 
         <div class="ml-auto flex items-center gap-1">
             @auth
@@ -172,10 +169,7 @@
                 <x-logo/>
                 <button type="button" @click="mobile = false" class="btn-ghost size-10 rounded-full p-0" aria-label="{{ __('Menüyü kapat') }}"><x-icon name="x"/></button>
             </div>
-            <form action="{{ route('products.index') }}" method="GET" class="relative mt-5">
-                <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle"/>
-                <input type="search" name="q" placeholder="{{ __('Ara…') }}" class="input pl-9" aria-label="{{ __('Ara') }}">
-            </form>
+            @include('partials.search-suggest', ['formClass' => 'relative mt-5', 'inputClass' => 'input pl-9', 'placeholder' => __('Ara…')])
             @auth
                 <a href="{{ route('wallet') }}" class="mt-4 flex items-center justify-between rounded-xl bg-surface-2 px-4 py-3 text-sm font-semibold">
                     <span class="flex items-center gap-2"><x-icon name="coins" class="size-4 text-filament-500"/>{{ __('Puan bakiyesi') }}</span>

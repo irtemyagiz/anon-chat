@@ -37,6 +37,7 @@ class ProductRequest extends FormRequest
             'commercial_price' => ['nullable', 'string', 'max:10'],
             'preview_video_url' => ['nullable', 'url:https', 'max:255', 'regex:/^https:\/\/(www\.)?(youtube\.com|youtu\.be|vimeo\.com)\//'],
             'current_version' => ['nullable', 'string', 'max:20', 'regex:/^[0-9A-Za-z.\-]+$/'],
+            'changelog' => ['nullable', 'string', 'max:2000'],
             'requires_supports' => ['nullable', Rule::in(['0', '1'])],
             'print_time_minutes' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'filament_type' => ['nullable', 'string', 'max:60'],

@@ -2,6 +2,8 @@
 {{-- Satır içi SVG ikon seti (24x24, stroke). Harici ikon kütüphanesine bağımlılık yok. --}}
 <svg {{ $attributes->merge(['class' => 'size-5', 'aria-hidden' => 'true']) }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     @switch($name)
+        @case('tag') <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/> @break
+        @case('chart') <path d="M3 3v18h18"/><path d="M7 15v3M12 10v8M17 6v12"/> @break
         @case('search') <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/> @break
         @case('sun') <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/> @break
         @case('moon') <path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/> @break

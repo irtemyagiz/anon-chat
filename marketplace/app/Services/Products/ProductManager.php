@@ -6,6 +6,7 @@ use App\Enums\FileScanStatus;
 use App\Enums\ProductStatus;
 use App\Exceptions\InvalidUploadException;
 use App\Exceptions\MarketplaceException;
+use App\Jobs\GeneratePreviewModel;
 use App\Jobs\ScanProductFile;
 use App\Models\License;
 use App\Models\Product;
@@ -65,7 +66,8 @@ class ProductManager
      */
     public function update(Product $product, array $data): Product
     {
-        return DB::transaction(function () use ($product, $data): Product {
+        $product = DB::transaction(function () use ($product, $data): Product {
+            $previousVersion = $product->current_version;
             $product->fill($this->attributes($data));
 
             if (filled($data['slug'] ?? null) && Str::slug($data['slug']) !== $product->slug) {
@@ -76,8 +78,20 @@ class ProductManager
             $this->syncLicenses($product, $data);
             $this->syncTags($product, $data['tags'] ?? null);
 
+            /** Yayındaki üründe sürüm değişirse sürüm geçmişine eklenir ve satın alanlara bildirilir. */
+            if ($product->isPublished() && $product->current_version !== $previousVersion) {
+                $version = $product->versions()->firstOrCreate(['version' => $product->current_version], ['released_at' => now(), 'changelog' => $data['changelog'] ?? null]);
+
+                if ($version->wasRecentlyCreated) {
+                    $owners = User::query()->whereIn('id', DB::table('purchase_entitlements')->where('product_id', $product->id)->whereNull('revoked_at')->select('user_id'))->get();
+                    $this->notifier->send($owners, new ProductUpdatedNotification($product->title, $product->slug, $version->version));
+                }
+            }
+
             return $product;
         });
+
+        return $product;
     }
 
     /**
@@ -119,6 +133,19 @@ class ProductManager
 
         if (! DB::table('downloads')->where('product_file_id', $file->id)->exists()) {
             Storage::disk($file->disk)->delete($file->path);
+        }
+
+        /** Otomatik önizleme kaldırılan dosyadan üretilmiş olabilir; kalan dosyalardan yeniden üretilir. */
+        $product = $file->product;
+
+        if ($product->preview_auto_generated) {
+            $this->removePreview($product);
+
+            $next = $product->files()->where('is_active', true)->where('extension', 'stl')->where('scan_status', FileScanStatus::Clean)->first();
+
+            if ($next !== null) {
+                GeneratePreviewModel::dispatch($next);
+            }
         }
     }
 
@@ -171,7 +198,7 @@ class ProductManager
         $old = $product->preview_model_path;
 
         $path = Storage::disk($disk)->putFileAs("products/{$product->uuid}/preview", $upload, Str::random(32).'.'.$info->extension, 'public');
-        $product->forceFill(['preview_model_path' => $path])->save();
+        $product->forceFill(['preview_model_path' => $path, 'preview_auto_generated' => false])->save();
 
         if ($old !== null) {
             Storage::disk($disk)->delete($old);
@@ -182,7 +209,7 @@ class ProductManager
     {
         if ($product->preview_model_path !== null) {
             Storage::disk(config('marketplace.storage.public_media_disk'))->delete($product->preview_model_path);
-            $product->forceFill(['preview_model_path' => null])->save();
+            $product->forceFill(['preview_model_path' => null, 'preview_auto_generated' => false])->save();
         }
     }
 
@@ -211,6 +238,20 @@ class ProductManager
         }
 
         return [];
+    }
+
+    /**
+     * Satışı olmayan ürün silinir (soft delete); satışı olan ürün yalnızca yayından
+     * kaldırılabilir, çünkü satın alanların dosyalara erişimi sürmelidir.
+     */
+    public function delete(Product $product): void
+    {
+        if ($product->sales_count > 0 || DB::table('purchase_entitlements')->where('product_id', $product->id)->exists()) {
+            throw new MarketplaceException(__('Bu ürünü satın alan veya indiren kullanıcılar olduğu için silinemez; yayından kaldırabilirsin.'));
+        }
+
+        $product->delete();
+        $this->audit->record('product.deleted', $product, actor: $product->creator);
     }
 
     public function unpublish(Product $product): void

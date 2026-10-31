@@ -61,7 +61,7 @@ class PointTopUpService
     {
         if ($selection instanceof PointPackage) {
             if (! $selection->is_active) {
-                throw new MarketplaceException('Seçilen puan paketi aktif değil.');
+                throw new MarketplaceException(__('Seçilen puan paketi aktif değil.'));
             }
 
             $points = $selection->totalPoints();
@@ -72,14 +72,14 @@ class PointTopUpService
         }
 
         if ($points < $this->minimumTopUpPoints()) {
-            throw new MarketplaceException("Minimum puan yükleme miktarı {$this->minimumTopUpPoints()} puandır.");
+            throw new MarketplaceException(__('Minimum puan yükleme miktarı :points puandır.', ['points' => $this->minimumTopUpPoints()]));
         }
 
         $currency = $this->currencies->paymentCurrency($user);
         $provider = $this->gateways->enabledProvider($providerCode);
 
         if (! $provider->supportsCurrency($currency)) {
-            throw new MarketplaceException("Seçilen ödeme yöntemi {$currency} para birimini desteklemiyor.");
+            throw new MarketplaceException(__('Seçilen ödeme yöntemi :currency para birimini desteklemiyor.', ['currency' => $currency]));
         }
 
         $rate = $currency === ExchangeRateService::BASE ? null : $this->rates->currentForPayment($currency);
@@ -240,7 +240,7 @@ class PointTopUpService
             $purchase = PointPurchase::query()->lockForUpdate()->findOrFail($purchase->id);
 
             if ($purchase->status !== PointPurchaseStatus::Paid) {
-                throw new MarketplaceException('Yalnızca tamamlanmış yüklemeler iade edilebilir.');
+                throw new MarketplaceException(__('Yalnızca tamamlanmış yüklemeler iade edilebilir.'));
             }
 
             $transaction = $this->wallets->debit(
@@ -285,7 +285,7 @@ class PointTopUpService
             ->first();
 
         if ($purchase === null) {
-            throw new MarketplaceException('Webhook için puan yükleme siparişi bulunamadı.');
+            throw new MarketplaceException(__('Webhook için puan yükleme siparişi bulunamadı.'));
         }
 
         return match ($event->type) {

@@ -80,9 +80,13 @@
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             @foreach ($categories->take(12) as $category)
                 <a href="{{ route('categories.show', $category) }}" class="card group flex flex-col justify-between gap-6 p-4 transition hover:border-katman-300 dark:hover:border-katman-700">
-                    <span class="flex size-10 items-center justify-center rounded-xl bg-surface-2 text-katman-700 transition group-hover:bg-katman-600 group-hover:text-white dark:text-katman-300">
-                        <x-icon name="layers" class="size-5"/>
-                    </span>
+                    @if ($category->image_path)
+                        <img src="{{ Storage::disk(config('marketplace.storage.public_media_disk'))->url($category->image_path) }}" alt="" class="size-10 rounded-xl object-cover" loading="lazy">
+                    @else
+                        <span class="flex size-10 items-center justify-center rounded-xl bg-surface-2 text-katman-700 transition group-hover:bg-katman-600 group-hover:text-white dark:text-katman-300">
+                            <x-icon name="layers" class="size-5"/>
+                        </span>
+                    @endif
                     <span>
                         <span class="block text-sm font-bold text-ink">{{ $category->localizedName() }}</span>
                         <span class="text-xs text-subtle">{{ trans_choice(':count model|:count model', $category->products_count, ['count' => $category->products_count]) }}</span>

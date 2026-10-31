@@ -300,6 +300,40 @@ class AdminPanelTest extends TestCase
         app(ProductManager::class)->addFiles($product, [new UploadedFile(base_path('tests/Fixtures/cube.stl'), 'a.stl', null, null, true)]);
     }
 
+    public function test_category_image_and_localized_seo_fields(): void
+    {
+        Storage::fake('public');
+        $this->actingAsAdmin();
+        $category = Category::query()->where('slug', 'figurler')->sole();
+
+        $this->put(route('admin.categories.update', $category), [
+            'name_tr' => 'Figürler',
+            'name_en' => 'Figures',
+            'description_tr' => 'Koleksiyon figürleri',
+            'description_en' => 'Collectible figures',
+            'meta_title_en' => 'Figure STL files',
+            'is_active' => 1,
+            'image' => UploadedFile::fake()->image('kapak.jpg', 800, 600),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $category->refresh();
+        $this->assertSame(['tr' => 'Koleksiyon figürleri', 'en' => 'Collectible figures'], $category->description);
+        $this->assertSame(['en' => 'Figure STL files'], $category->meta_title);
+        $this->assertStringEndsWith('.webp', $category->image_path);
+        Storage::disk('public')->assertExists($category->image_path);
+
+        $this->get('/kategori/figurler')->assertSee('Koleksiyon figürleri');
+        $this->get('/kategori/figurler?lang=en')->assertSee('Collectible figures');
+
+        $this->put(route('admin.categories.update', $category), ['name_tr' => 'Figürler', 'is_active' => 1, 'image' => UploadedFile::fake()->create('virus.php', 10, 'application/x-php')])
+            ->assertSessionHasErrors();
+
+        $path = $category->image_path;
+        $this->put(route('admin.categories.update', $category), ['name_tr' => 'Figürler', 'is_active' => 1, 'remove_image' => 1])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertNull($category->fresh()->image_path);
+        Storage::disk('public')->assertMissing($path);
+    }
+
     public function test_admin_actions_are_logged_without_secrets(): void
     {
         $admin = $this->actingAsAdmin();

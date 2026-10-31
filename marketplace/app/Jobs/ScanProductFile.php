@@ -49,6 +49,10 @@ class ScanProductFile implements ShouldQueue
             'is_active' => $result->status !== FileScanStatus::Infected && $this->file->is_active,
         ])->save();
 
+        if ($result->status === FileScanStatus::Clean && $this->file->extension === 'stl') {
+            GeneratePreviewModel::dispatch($this->file);
+        }
+
         if ($result->status === FileScanStatus::Infected) {
             DB::table('security_events')->insert([
                 'user_id' => $this->file->product->creator_id,

@@ -37,7 +37,7 @@ class PaymentGatewayManager
         $provider = PaymentProvider::query()->where('code', $code)->where('is_enabled', true)->first();
 
         if ($provider === null || config("marketplace.payments.gateways.{$code}") === null) {
-            throw new MarketplaceException('Seçilen ödeme yöntemi şu anda kullanılamıyor.');
+            throw new MarketplaceException(__('Seçilen ödeme yöntemi şu anda kullanılamıyor.'));
         }
 
         return $provider;

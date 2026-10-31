@@ -54,7 +54,7 @@ class ExchangeRateService
         $maxAgeHours = (int) config('marketplace.exchange_rates.max_age_hours');
 
         if ($rate === null || $rate->fetched_at->lt(now()->subHours($maxAgeHours))) {
-            throw new MarketplaceException('Güncel döviz kuru alınamadığı için şu anda bu para birimiyle ödeme yapılamıyor.');
+            throw new MarketplaceException(__('Güncel döviz kuru alınamadığı için şu anda bu para birimiyle ödeme yapılamıyor.'));
         }
 
         return $rate;

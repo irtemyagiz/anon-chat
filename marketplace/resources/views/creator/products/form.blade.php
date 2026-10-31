@@ -31,6 +31,11 @@
                         <button class="btn-secondary">{{ __('Yayından kaldır') }}</button>
                     </form>
                 @endif
+                @if ($product->sales_count === 0)
+                    <form method="POST" action="{{ route('creator.products.destroy', $product) }}" x-data @submit="if (! confirm(@js(__('Ürün kalıcı olarak silinsin mi?')))) $event.preventDefault()">@csrf @method('DELETE')
+                        <button class="btn-ghost text-red-600">{{ __('Sil') }}</button>
+                    </form>
+                @endif
             </div>
         </div>
 
@@ -122,17 +127,47 @@
                     @endforeach
                 </ul>
             @endif
-            <input type="file" name="files[]" multiple class="input file:mr-3 file:rounded-lg file:border-0 file:bg-surface-2 file:px-3 file:py-1.5 file:text-sm file:font-medium">
-            <p class="text-xs text-subtle">{{ __('Sunucunun dosya başına yükleme sınırı: :limit', ['limit' => $uploadLimit]) }}</p>
+            @if ($editing)
+                {{-- Parçalı yükleme: ad alanı yok, dosyalar form gönderilmeden doğrudan yüklenir. --}}
+                <div x-data="chunkedUploader(@js(route('creator.uploads.store', $product)), @js('katman-upload:'.$product->uuid), @js(['failed' => __('Yükleme tamamlanamadı. Tekrar deneyin.')]))" class="space-y-3">
+                    <label class="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-line px-4 py-6 text-center text-sm hover:border-katman-400">
+                        <x-icon name="upload" class="size-6 text-subtle"/>
+                        <span class="font-semibold">{{ __('Dosya seç') }}</span>
+                        <span class="text-xs text-subtle">{{ __('Dosya başına en fazla :mb MB. Büyük dosyalar parça parça gönderilir; bağlantı koparsa aynı dosyayı yeniden seçerek kaldığın yerden devam edebilirsin.', ['mb' => app(\App\Services\Settings\SettingsService::class)->integer('storage.max_file_size_mb')]) }}</span>
+                        <input type="file" multiple class="sr-only" @change="select($event)">
+                    </label>
+                    <template x-for="(item, index) in items" :key="index">
+                        <div class="rounded-xl border border-line px-4 py-2.5 text-sm">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="min-w-0 truncate" x-text="item.name"></span>
+                                <span class="shrink-0 text-xs text-subtle tabular-nums" x-show="item.status === 'uploading'" x-text="item.progress + '%'"></span>
+                                <span class="shrink-0 text-xs text-subtle" x-show="item.status === 'waiting'">{{ __('Sırada') }}</span>
+                                <span class="shrink-0 text-xs text-subtle" x-show="item.status === 'processing'">{{ __('Kontrol ediliyor…') }}</span>
+                                <span class="shrink-0 text-xs font-semibold text-katman-700 dark:text-katman-300" x-show="item.status === 'done'">{{ __('Eklendi') }}</span>
+                                <button type="button" class="shrink-0 text-xs font-semibold text-red-600 hover:underline" x-show="item.status === 'error'" @click="retry(item)">{{ __('Tekrar dene') }}</button>
+                            </div>
+                            <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2" x-show="item.status === 'uploading' || item.status === 'processing'">
+                                <div class="h-full rounded-full bg-katman-500 transition-all" :style="`width: ${item.progress}%`"></div>
+                            </div>
+                            <p class="mt-1 text-xs" x-show="item.message" x-text="item.message" :class="item.status === 'error' ? 'text-red-600 dark:text-red-400' : 'text-muted'"></p>
+                        </div>
+                    </template>
+                    <p class="text-xs text-subtle" x-show="items.some(i => i.status === 'done')" x-cloak>{{ __('Eklenen dosyalar sayfa yenilendiğinde yukarıdaki listede görünür.') }}</p>
+                </div>
+            @else
+                <input type="file" name="files[]" multiple class="input file:mr-3 file:rounded-lg file:border-0 file:bg-surface-2 file:px-3 file:py-1.5 file:text-sm file:font-medium">
+                <p class="text-xs text-subtle">{{ __('Sunucunun dosya başına yükleme sınırı: :limit. Daha büyük dosyalar için ürünü kaydet; düzenleme sayfasında parça parça yükleme kullanılır.', ['limit' => $uploadLimit]) }}</p>
+            @endif
             @error('files.*')<p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
         </section>
 
         <section class="card space-y-4 p-6">
             <div class="flex items-center justify-between"><h2 class="font-bold">{{ __('3D önizleme (isteğe bağlı)') }}</h2><span class="text-xs text-subtle">STL, OBJ, 3MF · {{ config('marketplace.storage.max_preview_size_mb') }} MB</span></div>
             <p class="text-xs text-muted">{{ __('Önizleme dosyası ürün sayfasında herkese gösterilir. Satılan dosyanın kendisini değil, detayı azaltılmış bir sürümünü yükleyin.') }}</p>
+            <p class="text-xs text-muted">{{ __('Önizleme yüklemezsen, güvenlik taraması tamamlanan ilk STL dosyandan baskıya uygun olmayan, kaba bir önizleme otomatik oluşturulur.') }}</p>
             @if ($editing && $product->preview_model_path)
                 <div class="flex items-center justify-between rounded-xl border border-line px-4 py-2.5 text-sm">
-                    <span class="flex items-center gap-2"><x-icon name="cube" class="size-4"/>{{ __('Önizleme yüklü') }} ({{ strtoupper(pathinfo($product->preview_model_path, PATHINFO_EXTENSION)) }})</span>
+                    <span class="flex items-center gap-2"><x-icon name="cube" class="size-4"/>{{ $product->preview_auto_generated ? __('Otomatik oluşturulan önizleme') : __('Önizleme yüklü') }} ({{ strtoupper(pathinfo($product->preview_model_path, PATHINFO_EXTENSION)) }})</span>
                     <button type="submit" form="delete-preview" class="btn-ghost px-2 py-1 text-xs">{{ __('Kaldır') }}</button>
                 </div>
             @endif
@@ -173,6 +208,12 @@
                 <x-field name="printer_compatibility" :label="__('Yazıcı uyumluluğu')" :value="$product->printer_compatibility" :placeholder="__('Örn. 220×220 mm tabla ve üzeri')"/>
                 <x-field name="current_version" :label="__('Model sürümü')" :value="$product->current_version ?? '1.0'"/>
             </div>
+            @if ($editing && $product->isPublished())
+                <div>
+                    <label for="changelog" class="label">{{ __('Sürüm notu (sürümü değiştirirsen)') }}</label>
+                    <textarea id="changelog" name="changelog" rows="2" class="input" maxlength="2000" placeholder="{{ __('Bu sürümde neler değişti? Satın alanlara bildirim gider.') }}">{{ old('changelog') }}</textarea>
+                </div>
+            @endif
             <x-field name="print_notes" :label="__('Baskı önerileri')" :value="$product->print_settings['notes'] ?? null"/>
             <x-field name="preview_video_url" type="url" :label="__('Video önizleme (YouTube / Vimeo, isteğe bağlı)')" :value="$product->preview_video_url" placeholder="https://www.youtube.com/watch?v=…"/>
         </section>

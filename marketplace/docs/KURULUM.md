@@ -18,8 +18,10 @@
 >    `C:\php83\php.exe` kullanın (MySQL için XAMPP'ı kullanmaya devam edersiniz).
 > 2. PHP 8.3+ içeren güncel bir XAMPP sürümü kurun.
 
-`php.ini` dosyasında (`C:\xampp\php\php.ini`) büyük model dosyaları için yükleme
-sınırlarını artırın ve Apache'yi yeniden başlatın:
+`php.ini` dosyasında (`C:\xampp\php\php.ini`) yükleme sınırlarını artırın ve Apache'yi
+yeniden başlatın. Ürün düzenleme sayfası büyük dosyaları 4 MB'lık parçalarla gönderdiği
+için oradaki yüklemelerde bu sınırlar sorun olmaz; yeni ürün formundaki doğrudan yükleme
+ise bu değerlere bağlıdır:
 
 ```
 upload_max_filesize = 512M

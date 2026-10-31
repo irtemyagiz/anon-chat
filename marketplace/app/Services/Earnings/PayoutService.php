@@ -37,20 +37,20 @@ class PayoutService
     public function request(User $creator, int $amountCents, string $currency, string $method, array $details): CreatorPayoutRequest
     {
         if (! $creator->isApprovedCreator() || ! $creator->creatorProfile->isVerified()) {
-            throw new MarketplaceException('Ödeme talebi için satıcı kimlik ve vergi doğrulamasının tamamlanması gerekir.');
+            throw new MarketplaceException(__('Ödeme talebi için satıcı kimlik ve vergi doğrulamasının tamamlanması gerekir.'));
         }
 
         $minimum = (int) config('marketplace.earnings.minimum_payout_cents');
 
         if ($amountCents < $minimum) {
-            throw new MarketplaceException('Talep edilen tutar minimum ödeme tutarının altında.');
+            throw new MarketplaceException(__('Talep edilen tutar minimum ödeme tutarının altında.'));
         }
 
         return DB::transaction(function () use ($creator, $amountCents, $currency, $method, $details): CreatorPayoutRequest {
             $balance = $this->earnings->lockBalance($creator->id);
 
             if ($amountCents > $balance->withdrawableCents()) {
-                throw new MarketplaceException('Talep edilen tutar kullanılabilir bakiyenizi aşıyor.');
+                throw new MarketplaceException(__('Talep edilen tutar kullanılabilir bakiyenizi aşıyor.'));
             }
 
             $balance->reserved_cents += $amountCents;

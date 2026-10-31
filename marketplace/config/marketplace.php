@@ -123,6 +123,26 @@ return [
         'max_preview_size_mb' => (int) env('MAX_PREVIEW_FILE_MB', 30),
         'max_files_per_product' => (int) env('MAX_FILES_PER_PRODUCT', 20),
         'max_images_per_product' => (int) env('MAX_IMAGES_PER_PRODUCT', 12),
+
+        /*
+         * Büyük dosyalar tarayıcıdan parça parça gönderilir; böylece sunucunun
+         * upload_max_filesize sınırı yalnızca parça boyutu için geçerlidir.
+         * Parça boyutu post_max_size değerinin altında olmalıdır.
+         */
+        'chunk_size_mb' => (float) env('UPLOAD_CHUNK_SIZE_MB', 4),
+        'upload_session_hours' => (int) env('UPLOAD_SESSION_HOURS', 24),
+
+        /*
+         * Creator önizleme yüklemezse, taraması temiz çıkan ilk STL dosyasından
+         * düşük çözünürlüklü (baskıya uygun olmayan) bir önizleme üretilir.
+         * grid: en uzun kenarın bölündüğü hücre sayısı (küçük = daha kaba).
+         */
+        'auto_preview' => [
+            'enabled' => (bool) env('AUTO_PREVIEW_ENABLED', true),
+            'max_source_mb' => (int) env('AUTO_PREVIEW_MAX_SOURCE_MB', 200),
+            'grid' => (int) env('AUTO_PREVIEW_GRID', 80),
+            'max_triangles' => (int) env('AUTO_PREVIEW_MAX_TRIANGLES', 60000),
+        ],
     ],
 
     /*
