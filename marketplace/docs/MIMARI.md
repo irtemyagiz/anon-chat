@@ -270,8 +270,11 @@ kaldırılan ürünü önceden satın alanlar indirmeye devam eder. Onay şimdil
 | 22. Yorum ve değerlendirme | ✅ Yıldızlı değerlendirme yalnızca ürünü edinenler; satın alanlara "doğrulanmış satın alma" rozeti; creator yanıtı; yorum + yanıt; spam koruması; 3 şikâyette otomatik gizleme; içerik/telif şikâyeti (ziyaretçi e-postayla); yönetici moderasyonu |
 | 25. Yönetim paneli | 🟡 Dashboard (11 metrik + bekleyen işler), creator başvuruları, ürün moderasyonu (onay/ret/yayından kaldırma/öne çıkarma), kullanıcılar (arama, askıya alma, rol, puan düzeltme, işlem ve satın alma geçmişi), puan paketleri + minimum yükleme + ekonomi raporu, ödemeler (iade, sağlayıcılar, webhook kayıtları, itirazlar), döviz kuru (manuel/otomatik/geçmiş/sağlayıcı kayıtları), komisyon (varsayılan + creator/kategori/kampanya kuralları), kategoriler, dosya formatları, loglar. Hakediş yönetimi, içerik/SEO ve sistem ayarları sonra |
 | 23. Arama ve filtreleme | 🟡 Metin, kategori, ücretli/ücretsiz, sıralama. Format/lisans/teknoloji filtreleri ve anlık öneriler sonra |
-| 29. Otomatik testler | ✅ 167 test + 2 eşzamanlılık testi |
-| 14, 24, 26–28, 30 | ⏳ Sıradaki adımlar: bildirimler (e-posta + site içi), SEO (sitemap, robots, yapılandırılmış veri), içerik yönetimi (sayfa/SSS/blog), İngilizce çeviriler, gerçek ödeme sağlayıcıları, cPanel dağıtım rehberi |
+| 29. Otomatik testler | ✅ 193 test + 2 eşzamanlılık testi |
+| 24. Bildirimler | ✅ 17 tür; site içi + kategori bazlı e-posta tercihi; yönetici uyarıları izne göre |
+| 26. SEO ve çok dillilik | ✅ Sitemap (bölümlü), robots.txt, JSON-LD (Product, BreadcrumbList, WebSite+SearchAction, Organization, ProfilePage), og:image, hreflang + ?lang=en, sayfa bazında meta ayarları; Türkçe/İngilizce arayüz (yönetim paneli Türkçe), çeviri kapsamı testi |
+| — İçerik, destek, KVKK | ✅ Sayfa/blog/SSS/banner yönetimi, yasal metin taslakları (TR+EN, hukuki inceleme gerekli), sistem/SMTP/bakım modu ayarları, destek talepleri ve puan iadesi talebi, hesap silme (anonimleştirme) |
+| 14, 27, 28, 30 | ⏳ Sıradaki adımlar: güvenlik başlıkları, performans (görsel varyantları, önbellek), gerçek ödeme sağlayıcıları, cPanel dağıtım rehberi |
 
 ## 11. Karar bekleyen noktalar
 

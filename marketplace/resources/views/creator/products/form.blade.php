@@ -147,7 +147,7 @@
                     <label for="print_technology" class="label">{{ __('Baskı teknolojisi') }}</label>
                     <select id="print_technology" name="print_technology" class="input">
                         <option value="">—</option>
-                        @foreach (['fdm' => 'FDM (filament)', 'sla' => 'SLA / reçine', 'sls' => 'SLS', 'other' => __('Diğer')] as $value => $label)
+                        @foreach (['fdm' => __('FDM (filament)'), 'sla' => __('SLA / reçine'), 'sls' => 'SLS', 'other' => __('Diğer')] as $value => $label)
                             <option value="{{ $value }}" @selected(old('print_technology', $product->print_technology) === $value)>{{ $label }}</option>
                         @endforeach
                     </select>

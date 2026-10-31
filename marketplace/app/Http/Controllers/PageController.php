@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Faq;
 use App\Models\Page;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\View\View;
 
 class PageController extends Controller
@@ -18,7 +19,7 @@ class PageController extends Controller
     public function blog(): View
     {
         return view('pages.blog', [
-            'posts' => Page::query()->visible()->where('type', 'blog')->where('locale', app()->getLocale())->latest('published_at')->paginate(12),
+            'posts' => Page::query()->visible()->where('type', 'blog')->where('locale', $this->contentLocale(Page::query()->visible()->where('type', 'blog')))->latest('published_at')->paginate(12),
         ]);
     }
 
@@ -30,8 +31,18 @@ class PageController extends Controller
     public function faq(): View
     {
         return view('pages.faq', [
-            'faqs' => Faq::query()->where('is_active', true)->where('locale', app()->getLocale())->orderBy('sort_order')->get(),
+            'faqs' => Faq::query()->where('is_active', true)->where('locale', $this->contentLocale(Faq::query()->where('is_active', true)))->orderBy('sort_order')->get(),
         ]);
+    }
+
+    /**
+     * Geçerli dilde içerik yoksa Türkçe içerik gösterilir.
+     *
+     * @param  Builder<Faq|Page>  $query
+     */
+    private function contentLocale($query): string
+    {
+        return (clone $query)->where('locale', app()->getLocale())->exists() ? app()->getLocale() : 'tr';
     }
 
     /**

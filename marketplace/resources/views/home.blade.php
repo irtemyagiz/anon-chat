@@ -1,4 +1,14 @@
 <x-layouts.app>
+    <x-slot:head>
+        <x-structured-data :data="[
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => config('app.name'),
+            'url' => route('home'),
+            'potentialAction' => ['@type' => 'SearchAction', 'target' => route('products.index').'?q={search_term_string}', 'query-input' => 'required name=search_term_string'],
+        ]"/>
+        <x-structured-data :data="['@context' => 'https://schema.org', '@type' => 'Organization', 'name' => config('app.name'), 'url' => route('home'), 'logo' => asset('favicon.svg')]"/>
+    </x-slot:head>
     {{-- 1. Hero + 2. Gelişmiş arama --}}
     <section class="relative overflow-hidden border-b border-line">
         <div class="layer-lines pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_70%_40%,black,transparent_70%)]"></div>

@@ -45,7 +45,7 @@
                                 <td class="px-5 py-3 whitespace-nowrap text-muted">{{ $entry->created_at->format('d.m.Y H:i') }}</td>
                                 <td class="px-5 py-3">
                                     <span class="font-medium">{{ __($entry->transaction->type->label()) }}</span>
-                                    @if ($entry->transaction->description)<span class="block text-xs text-subtle">{{ $entry->transaction->description }}</span>@endif
+                                    @if ($entry->transaction->description && app()->getLocale() === 'tr')<span class="block text-xs text-subtle">{{ $entry->transaction->description }}</span>@endif
                                     <span class="block font-mono text-[0.7rem] text-subtle">{{ Str::limit($entry->transaction->reference, 13, '') }}</span>
                                 </td>
                                 <td @class(['px-5 py-3 text-right font-semibold tabular-nums whitespace-nowrap', 'text-katman-700 dark:text-katman-300' => $entry->amount > 0])>{{ $entry->amount > 0 ? '+' : '' }}{{ number_format($entry->amount, 0, ',', '.') }}</td>

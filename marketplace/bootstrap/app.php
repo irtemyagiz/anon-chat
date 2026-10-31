@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApplyUserPreferences;
+use App\Http\Middleware\DetectRequestLocale;
 use App\Http\Middleware\EnforceMaintenanceMode;
 use App\Http\Middleware\EnsureAdminAccess;
 use App\Http\Middleware\EnsureApprovedCreator;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->preventRequestForgery(except: ['webhooks/*']);
+        $middleware->prepend(DetectRequestLocale::class);
         $middleware->encryptCookies(except: ['theme']);
         $middleware->alias([
             'creator' => EnsureApprovedCreator::class,

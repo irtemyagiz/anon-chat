@@ -170,5 +170,49 @@ MD],
         foreach ($faqs as $index => [$question, $answer]) {
             Faq::query()->firstOrCreate(['locale' => 'tr', 'question' => $question], ['answer' => $answer, 'sort_order' => ($index + 1) * 10, 'is_active' => true]);
         }
+
+        $this->seedEnglish();
+    }
+
+    /**
+     * İngilizce SSS ve yasal metin taslakları (Türkçe sürümlerin özetleri).
+     */
+    private function seedEnglish(): void
+    {
+        $notice = "> **DRAFT — Legal review required.** This text is a template. Fill in the company name, address and registration details, and have it reviewed by a lawyer before publishing. You can remove this notice in the admin panel.\n\n";
+
+        $pages = [
+            ['page', 'hakkimizda', 'About us', false, "Katman is a marketplace where independent designers share and sell 3D-print-ready digital models.\n\n- Designers open their own store, sell models and share free ones.\n- Buyers purchase quickly and securely with points and can always access the files they bought.\n- Paid files are never public; downloads use short-lived secure links.\n\nFor questions, create a support ticket from your account."],
+            ['legal', 'kullanim-sartlari', 'Terms of Use', true, "## Points\n- Points can only be used to buy digital products on the platform. **1 USD = 100 POINT**.\n- Points cannot be converted to cash, transferred or sold.\n- Refunds of unspent points are handled via support tickets; spent points are not refundable.\n- In case of a payment dispute (chargeback), the related points are deducted.\n\n## Licenses\nYou may use purchased products under the selected license. Sharing, reselling or distributing the digital files is prohibited.\n\n## Creators\nCreators declare that they hold all rights to uploaded content. The platform commission is deducted from each sale. Payouts require identity/tax verification.\n\n## Prohibited content\nInfringing, illegal, malicious or misleading content is removed and accounts may be suspended."],
+            ['legal', 'gizlilik-ve-kvkk', 'Privacy Notice (KVKK / GDPR)', true, "## Data we process\nIdentity and contact (name, username, email, country), transaction security (IP address, session and login records), purchase/top-up/download/support records, and for sellers legal name, tax/ID number, address and payout details (stored encrypted).\n\n## Purposes and legal bases\nPerformance of contract, legal obligations, legitimate interest (security and fraud prevention) and your consent.\n\n## Retention and your rights\nFinancial records are kept for the legally required period. When you delete your account, your personal data is anonymized. You may request access, correction or deletion of your data; you can delete your account under **Profile and settings → Delete account**."],
+            ['legal', 'mesafeli-satis-sozlesmesi', 'Distance Sales Agreement', true, "This agreement governs the online sale of point packages and digital content.\n\n## Delivery\nPoints are added instantly after the payment provider confirms the payment; digital content is added to your library upon purchase.\n\n## Right of withdrawal\nUnder the Turkish Distance Contracts Regulation (art. 15/1-ğ), the right of withdrawal does not apply to digital content and services performed instantly once performance has begun. Refund requests for unspent points are handled separately (see Refund Policy)."],
+            ['legal', 'iade-ve-cayma', 'Refund Policy', true, "## Point packages\n- **Unspent points:** you may request a refund within [14] days via a support ticket. Refunds go to the original payment method.\n- **Spent points** are not refundable.\n\n## Digital products\nDigital files are generally non-refundable. If a file is broken, incomplete or clearly does not match its description, or you were charged twice due to a technical error, create a support ticket; approved requests are refunded in points and the product is removed from your library."],
+            ['legal', 'telif-hakki-politikasi', 'Copyright and Takedown Policy', true, 'Report infringing content via **“Report this content”** on the product page and choose “Copyright infringement”. Include a link to the original work or proof of ownership, a description of the infringing product and your email. No account is required. Reports are reviewed within [3] business days; infringing products are removed and repeat infringers are suspended.'],
+            ['legal', 'cerez-politikasi', 'Cookie Policy', true, 'We only use cookies required for the service to work: the session cookie (keeps you signed in), XSRF-TOKEN (form security) and theme (your light/dark preference, 1 year). No advertising or third-party tracking cookies are used.'],
+        ];
+
+        foreach ($pages as [$type, $slug, $title, $isDraft, $body]) {
+            Page::query()->firstOrCreate(['type' => $type, 'slug' => $slug, 'locale' => 'en'], [
+                'title' => $title,
+                'body' => ($isDraft ? $notice : '').$body,
+                'is_published' => true,
+                'published_at' => now(),
+            ]);
+        }
+
+        $faqs = [
+            ['What are points and how do they work?', 'All purchases on Katman are made with points. 1 USD = 100 POINT. Top up once and buy any model with one click.'],
+            ['What is the minimum top-up?', 'The minimum top-up is 500 POINT (5 USD). Users in Türkiye pay in TRY at the current exchange rate.'],
+            ['Do my points change if the exchange rate changes?', 'No. The number of points you top up is fixed; the exchange rate at payment time is recorded and never changes afterwards.'],
+            ['Where can I find the files I bought?', 'Go to My account → My library to access every model you bought or downloaded at any time.'],
+            ['Can I cash out or transfer my points?', 'No. Points can only be used for digital products on the platform; they cannot be converted to cash or transferred.'],
+            ['Can I get a refund for unspent points?', 'Create a support ticket for unspent points. See the Refund Policy for details.'],
+            ['How do I earn as a creator?', 'Once your creator application is approved, upload products and set your price in USD. After the commission, the rest of each sale goes to your earnings.'],
+            ['When can I receive my payout?', 'Sale earnings become available after the refund period. After completing seller verification, request a payout from Creator dashboard → Payouts.'],
+        ];
+
+        foreach ($faqs as $index => [$question, $answer]) {
+            Faq::query()->firstOrCreate(['locale' => 'en', 'question' => $question], ['answer' => $answer, 'sort_order' => ($index + 1) * 10, 'is_active' => true]);
+        }
     }
 }

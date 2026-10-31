@@ -15,13 +15,18 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $pageTitle }}</title>
     <meta name="description" content="{{ $description ?? __('Bağımsız tasarımcıların 3D baskıya hazır STL, 3MF ve OBJ modellerini keşfet, puanla satın al veya ücretsiz indir.') }}">
-    <link rel="canonical" href="{{ url()->current() }}">
+    @php $currentUrl = url()->current(); @endphp
+    <link rel="canonical" href="{{ app()->getLocale() === 'en' ? $currentUrl.'?lang=en' : $currentUrl }}">
+    <link rel="alternate" hreflang="tr" href="{{ $currentUrl }}">
+    <link rel="alternate" hreflang="en" href="{{ $currentUrl }}?lang=en">
+    <link rel="alternate" hreflang="x-default" href="{{ $currentUrl }}">
     @if ($noindex)
         <meta name="robots" content="noindex, nofollow">
     @endif
     <meta property="og:site_name" content="{{ config('app.name') }}">
     <meta property="og:title" content="{{ $pageTitle }}">
     <meta property="og:type" content="website">
+    <meta property="og:locale" content="{{ app()->getLocale() === 'en' ? 'en_US' : 'tr_TR' }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:description" content="{{ $description ?? __('Bağımsız tasarımcıların 3D baskıya hazır STL, 3MF ve OBJ modellerini keşfet, puanla satın al veya ücretsiz indir.') }}">
     @if ($ogImage)
@@ -243,7 +248,12 @@
                         <option value="USD" @selected($displayCurrency === 'USD')>USD ($)</option>
                     </select>
                 </label>
-{{-- Dil seçici, İngilizce çeviriler (lang/en.json) tamamlandığında eklenecek. Altyapı hazır: ApplyUserPreferences. --}}
+<label class="block text-xs text-muted">{{ __('Dil') }}
+                    <select name="locale" class="input mt-1 py-2" @change="$el.form.submit()">
+                        <option value="tr" @selected(app()->getLocale() === 'tr')>Türkçe</option>
+                        <option value="en" @selected(app()->getLocale() === 'en')>English</option>
+                    </select>
+                </label>
                 <noscript><button class="btn-secondary w-full">{{ __('Kaydet') }}</button></noscript>
             </form>
         </div>

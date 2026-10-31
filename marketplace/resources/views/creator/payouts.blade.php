@@ -36,7 +36,7 @@
                 <div>
                     <label class="label" for="country_code">{{ __('Vergi mukimi olunan ülke') }}</label>
                     <select id="country_code" name="country_code" x-model="country" class="input">
-                        @foreach (config('countries') as $code => $names)<option value="{{ $code }}">{{ $names[0] }}</option>@endforeach
+                        @foreach (config('countries') as $code => $names)<option value="{{ $code }}">{{ $names[app()->getLocale() === 'en' ? 1 : 0] }}</option>@endforeach
                     </select>
                 </div>
                 <div x-show="country === 'TR' && type === 'individual'"><x-field name="identity_number" :label="__('T.C. kimlik numarası')" inputmode="numeric" maxlength="11" x-bind:disabled="!(country === 'TR' && type === 'individual')"/></div>

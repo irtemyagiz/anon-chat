@@ -41,6 +41,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SandboxCheckoutController;
+use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TopUpController;
 use App\Http\Controllers\WalletController;
@@ -54,6 +55,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', HomeController::class)->name('home');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemapIndex'])->name('sitemap.index');
+Route::get('/sitemaps/{section}-{page}.xml', [SeoController::class, 'sitemapSection'])->where(['section' => '[a-z]+', 'page' => '[0-9]+'])->name('sitemap.section');
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
 Route::get('/modeller', [ProductController::class, 'index'])->name('products.index');
 Route::get('/model/{product}', [ProductController::class, 'show'])->name('products.show');
 Route::get('/kategoriler', [CategoryController::class, 'index'])->name('categories.index');

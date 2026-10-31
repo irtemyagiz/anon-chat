@@ -39,7 +39,8 @@ class LayoutComposer
             'recentNotifications' => $user ? $user->notifications()->limit(6)->get() : collect(),
             'unreadNotifications' => $user ? $user->unreadNotifications()->count() : 0,
             'themePreference' => $user?->theme ?? request()->cookie('theme', 'system'),
-            'footerPages' => Page::query()->visible()->whereIn('type', ['page', 'legal'])->where('locale', 'tr')->orderBy('title')->get(['slug', 'title', 'type']),
+            'footerPages' => Page::query()->visible()->whereIn('type', ['page', 'legal'])->whereIn('locale', array_unique([app()->getLocale(), 'tr']))
+                ->orderByRaw('case when locale = ? then 0 else 1 end', [app()->getLocale()])->get(['slug', 'title', 'type'])->unique('slug')->sortBy('title')->values(),
             'siteLogo' => ($logo = $this->settings->get('site.logo_path')) ? Storage::disk(config('marketplace.storage.public_media_disk'))->url($logo) : null,
             'routeSeo' => request()->route()?->getName() ? SeoSetting::query()->where('route_name', request()->route()->getName())->where('locale', app()->getLocale())->first() : null,
             'defaultOgImage' => ($og = $this->settings->get('site.default_og_image')) ? Storage::disk(config('marketplace.storage.public_media_disk'))->url($og) : null,

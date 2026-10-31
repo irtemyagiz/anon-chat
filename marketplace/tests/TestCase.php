@@ -18,5 +18,6 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         $this->withoutVite();
+        $this->withHeader('Accept-Language', 'tr-TR,tr;q=0.9');
     }
 }

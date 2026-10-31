@@ -8,16 +8,30 @@
     $activeLicenses = $product->licenses->where('is_active', true)->sortByDesc('is_default')->values();
     $files = $product->files()->where('is_active', true)->get();
 @endphp
-<x-layouts.app :title="$product->meta_title ?: $product->title" :description="$product->meta_description ?: $product->short_description">
+<x-layouts.app :title="$product->meta_title ?: $product->title" :description="$product->meta_description ?: $product->short_description" :image="$product->cover_image_path ? $mediaDisk->url($product->cover_image_path) : null">
     <x-slot:head>
-        <script type="application/ld+json">{!! json_encode([
+        <x-structured-data :data="array_filter([
             '@context' => 'https://schema.org',
             '@type' => 'Product',
             'name' => $product->title,
             'description' => $product->short_description,
+            'sku' => $product->uuid,
+            'url' => route('products.show', $product),
+            'image' => $product->cover_image_path ? $mediaDisk->url($product->cover_image_path) : null,
+            'category' => $product->category->localizedName(),
             'brand' => ['@type' => 'Brand', 'name' => $store?->store_name],
-            'offers' => ['@type' => 'Offer', 'priceCurrency' => 'USD', 'price' => \App\Services\Points\PointConverter::formatCents($product->price_cents), 'availability' => 'https://schema.org/InStock'],
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+            'aggregateRating' => $product->reviews_count > 0 ? ['@type' => 'AggregateRating', 'ratingValue' => (float) $product->rating_average, 'reviewCount' => $product->reviews_count] : null,
+            'offers' => ['@type' => 'Offer', 'priceCurrency' => 'USD', 'price' => \App\Services\Points\PointConverter::formatCents($product->price_cents), 'availability' => 'https://schema.org/InStock', 'url' => route('products.show', $product)],
+        ])"/>
+        <x-structured-data :data="[
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => [
+                ['@type' => 'ListItem', 'position' => 1, 'name' => __('Ana sayfa'), 'item' => route('home')],
+                ['@type' => 'ListItem', 'position' => 2, 'name' => $product->category->localizedName(), 'item' => route('categories.show', $product->category)],
+                ['@type' => 'ListItem', 'position' => 3, 'name' => $product->title],
+            ],
+        ]"/>
     </x-slot:head>
 
     <div class="container-page py-8">

@@ -26,7 +26,7 @@
             <div>
                 <label class="label" for="country_code">{{ __('Fatura ülkesi') }}</label>
                 <select id="country_code" name="country_code" class="input" required>
-                    @foreach (config('countries') as $code => $names)<option value="{{ $code }}" @selected(old('country_code', $user->country_code) === $code)>{{ $names[0] }}</option>@endforeach
+                    @foreach (config('countries') as $code => $names)<option value="{{ $code }}" @selected(old('country_code', $user->country_code) === $code)>{{ $names[app()->getLocale() === 'en' ? 1 : 0] }}</option>@endforeach
                 </select>
                 <p class="mt-1.5 text-xs text-subtle">{{ __('Ödeme para birimi bu ülkeye göre belirlenir.') }}</p>
             </div>

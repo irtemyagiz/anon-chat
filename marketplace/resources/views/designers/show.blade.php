@@ -1,4 +1,20 @@
-<x-layouts.app :title="$profile->store_name" :description="Str::limit($profile->description, 155)">
+@php $media = Storage::disk(config('marketplace.storage.public_media_disk')); @endphp
+<x-layouts.app :title="$profile->store_name" :description="Str::limit($profile->description, 155)" :image="$profile->cover_path ? $media->url($profile->cover_path) : ($profile->logo_path ? $media->url($profile->logo_path) : null)">
+    <x-slot:head>
+        <x-structured-data :data="array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'ProfilePage',
+            'url' => route('designers.show', $profile),
+            'mainEntity' => array_filter([
+                '@type' => 'Person',
+                'name' => $profile->designer_name,
+                'alternateName' => $profile->store_name,
+                'description' => $profile->description,
+                'image' => $profile->logo_path ? $media->url($profile->logo_path) : null,
+                'sameAs' => array_values($profile->social_links ?? []) ?: null,
+            ]),
+        ])"/>
+    </x-slot:head>
     <div class="border-b border-line">
         <div class="layer-lines h-40 sm:h-56" @if ($profile->cover_path) style="background-image:url('{{ Storage::disk(config('marketplace.storage.public_media_disk'))->url($profile->cover_path) }}');background-size:cover;background-position:center" @endif></div>
         <div class="container-page -mt-10 flex flex-col gap-4 pb-8 sm:flex-row sm:items-end">

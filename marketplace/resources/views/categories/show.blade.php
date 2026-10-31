@@ -1,4 +1,16 @@
-<x-layouts.app :title="$category->localizedName()" :description="$category->meta_description[app()->getLocale()] ?? null">
+<x-layouts.app :title="$category->meta_title[app()->getLocale()] ?? $category->localizedName()" :description="$category->meta_description[app()->getLocale()] ?? $category->meta_description['tr'] ?? null">
+    <x-slot:head>
+        <x-structured-data :data="[
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => array_values(array_filter([
+                ['@type' => 'ListItem', 'position' => 1, 'name' => __('Ana sayfa'), 'item' => route('home')],
+                ['@type' => 'ListItem', 'position' => 2, 'name' => __('Kategoriler'), 'item' => route('categories.index')],
+                $category->parent ? ['@type' => 'ListItem', 'position' => 3, 'name' => $category->parent->localizedName(), 'item' => route('categories.show', $category->parent)] : null,
+                ['@type' => 'ListItem', 'position' => $category->parent ? 4 : 3, 'name' => $category->localizedName()],
+            ])),
+        ]"/>
+    </x-slot:head>
     <div class="container-page py-12">
         <nav class="mb-4 flex items-center gap-2 text-sm text-muted" aria-label="{{ __('Sayfa yolu') }}">
             <a href="{{ route('home') }}" class="hover:text-ink">{{ __('Ana sayfa') }}</a> /
