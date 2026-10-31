@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApplyUserPreferences;
+use App\Http\Middleware\EnforceMaintenanceMode;
 use App\Http\Middleware\EnsureAdminAccess;
 use App\Http\Middleware\EnsureApprovedCreator;
 use App\Http\Middleware\LogAdminAction;
@@ -25,7 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.2fa' => RequireTwoFactor::class,
             'admin.log' => LogAdminAction::class,
         ]);
-        $middleware->web(append: [ApplyUserPreferences::class]);
+        $middleware->web(append: [ApplyUserPreferences::class, EnforceMaintenanceMode::class]);
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('home'));
     })

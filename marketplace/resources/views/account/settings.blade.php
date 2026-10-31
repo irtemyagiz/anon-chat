@@ -70,4 +70,17 @@
         <p class="text-xs text-subtle">{{ __('Hesap güvenliği e-postaları (doğrulama, şifre sıfırlama) her zaman gönderilir.') }}</p>
         <button class="btn-secondary">{{ __('Tercihleri kaydet') }}</button>
     </form>
+
+    <section class="card mt-6 space-y-4 border-red-200 p-6 dark:border-red-900" x-data="{ open: false }">
+        <h2 class="font-bold text-red-700 dark:text-red-400">{{ __('Hesabı sil') }}</h2>
+        <p class="text-sm text-muted">{{ __('Hesabın kapatılır ve kişisel verilerin (ad, e-posta, profil, tercihler) anonimleştirilir. Yasal saklama yükümlülüğü olan satış ve ödeme kayıtları kimliğinle ilişkilendirilmeden saklanır. Kalan puanların silinir; harcanmamış puan iadesi için önce destek talebi oluştur.') }}</p>
+        @error('delete')<p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+        <button type="button" @click="open = ! open" class="btn-secondary text-red-700 dark:text-red-400">{{ __('Hesabımı silmek istiyorum') }}</button>
+        <form x-show="open" x-cloak method="POST" action="{{ route('account.destroy') }}" class="space-y-3">
+            @csrf @method('DELETE')
+            <x-field name="password" type="password" :label="__('Şifren')" autocomplete="current-password" required/>
+            <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="1" required class="mt-0.5 accent-red-600">{{ __('Hesabımın kalıcı olarak kapatılacağını ve geri alınamayacağını anlıyorum.') }}</label>
+            <button class="btn bg-red-600 text-white hover:bg-red-700">{{ __('Hesabımı kalıcı olarak sil') }}</button>
+        </form>
+    </section>
 </x-layouts.account>

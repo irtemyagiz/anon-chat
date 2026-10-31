@@ -11,6 +11,7 @@ use App\Services\Files\Scanners\FileScanner;
 use App\Services\Files\Scanners\NullScanner;
 use App\Services\Notifications\Notifier;
 use App\Services\Payments\PaymentGatewayManager;
+use App\Services\Settings\SettingsService;
 use App\View\Composers\LayoutComposer;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -55,6 +56,11 @@ class AppServiceProvider extends ServiceProvider
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
 
         View::composer('components.layouts.app', LayoutComposer::class);
+        try {
+            $this->app->make(SettingsService::class)->applyToConfig();
+        } catch (\Throwable) {
+            // Kurulum aşaması: ayarlar tablosu henüz yok.
+        }
 
         Event::listen(Verified::class, fn (Verified $event) => $event->user instanceof User && app(Notifier::class)->send($event->user, new EmailVerifiedNotification));
 

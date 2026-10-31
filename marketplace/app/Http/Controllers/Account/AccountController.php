@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Collection;
 use App\Models\Product;
 use App\Models\PurchaseEntitlement;
+use App\Services\Accounts\AccountDeletionService;
 use App\Services\Audit\AuditLogger;
 use App\Services\Currency\CurrencyResolver;
 use App\Services\Files\ImageProcessor;
@@ -113,6 +114,23 @@ class AccountController extends Controller
         }
 
         return back()->with('status', __('Profilin güncellendi.'));
+    }
+
+    public function destroy(Request $request, AccountDeletionService $deletion): RedirectResponse
+    {
+        $request->validate(['password' => ['required', 'current_password'], 'confirm' => ['accepted']]);
+        $user = $request->user();
+
+        if ($blockers = $deletion->blockers($user)) {
+            return back()->withErrors(['delete' => implode(' ', $blockers)]);
+        }
+
+        $deletion->delete($user);
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('home')->with('status', __('Hesabın silindi. Kişisel verilerin anonimleştirildi.'));
     }
 
     public function updatePassword(Request $request, AuditLogger $audit): RedirectResponse

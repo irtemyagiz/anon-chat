@@ -4,6 +4,7 @@ use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Account\NotificationController;
 use App\Http\Controllers\Admin\CatalogSettingsController;
 use App\Http\Controllers\Admin\CommissionController as AdminCommissionController;
+use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\CreatorController as AdminCreatorController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ExchangeRateController as AdminExchangeRateController;
@@ -13,6 +14,8 @@ use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\PayoutController as AdminPayoutController;
 use App\Http\Controllers\Admin\PointController as AdminPointController;
 use App\Http\Controllers\Admin\ProductModerationController;
+use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
+use App\Http\Controllers\Admin\SupportController as AdminSupportController;
 use App\Http\Controllers\Admin\TwoFactorController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -32,11 +35,13 @@ use App\Http\Controllers\CreatorApplicationController;
 use App\Http\Controllers\DesignerController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\PreferenceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SandboxCheckoutController;
+use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TopUpController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Webhooks\PaymentWebhookController;
@@ -57,6 +62,10 @@ Route::get('/tasarimcilar', [DesignerController::class, 'index'])->name('designe
 Route::get('/magaza/{profile}', [DesignerController::class, 'show'])->name('designers.show');
 Route::get('/tasarim-yukle', [CreatorApplicationController::class, 'upload'])->name('upload');
 Route::get('/koleksiyon/{username}/{slug}', [CommunityController::class, 'showCollection'])->name('collections.show');
+Route::get('/sayfa/{slug}', [PageController::class, 'show'])->name('pages.show');
+Route::get('/blog', [PageController::class, 'blog'])->name('blog.index');
+Route::get('/blog/{slug}', [PageController::class, 'post'])->name('blog.show');
+Route::get('/sss', [PageController::class, 'faq'])->name('faq');
 Route::post('/model/{product}/sikayet', [ReviewController::class, 'reportProduct'])->middleware('throttle:5,10')->name('products.report');
 Route::post('/tercihler', PreferenceController::class)->middleware('throttle:30,1')->name('preferences.update');
 
@@ -104,6 +113,17 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/bildirimler/{id}', [NotificationController::class, 'open'])->name('notifications.open');
         Route::post('/bildirimler/tumunu-oku', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::put('/bildirim-tercihleri', [NotificationController::class, 'preferences'])->name('notifications.preferences');
+        Route::delete('/', [AccountController::class, 'destroy'])->middleware('throttle:5,1')->name('destroy');
+    });
+
+    Route::prefix('destek')->name('support.')->group(function (): void {
+        Route::get('/', [SupportController::class, 'index'])->name('index');
+        Route::get('/yeni', [SupportController::class, 'create'])->name('create');
+        Route::post('/', [SupportController::class, 'store'])->middleware('throttle:5,10')->name('store');
+        Route::get('/ek/{message}', [SupportController::class, 'attachment'])->name('attachment');
+        Route::get('/{ticket}', [SupportController::class, 'show'])->name('show');
+        Route::post('/{ticket}/yanit', [SupportController::class, 'reply'])->middleware('throttle:10,1')->name('reply');
+        Route::post('/{ticket}/kapat', [SupportController::class, 'close'])->name('close');
     });
 
     Route::middleware('throttle:60,1')->group(function (): void {
@@ -248,6 +268,39 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('yonetim')->name('admin
         Route::middleware('can:settings.manage')->group(function (): void {
             Route::get('/dosya-formatlari', [CatalogSettingsController::class, 'fileFormats'])->name('file-formats.index');
             Route::post('/dosya-formatlari/{format}', [CatalogSettingsController::class, 'toggleFileFormat'])->name('file-formats.toggle');
+        });
+
+        Route::middleware('can:support.manage')->group(function (): void {
+            Route::get('/destek', [AdminSupportController::class, 'index'])->name('support.index');
+            Route::get('/destek/{ticket}', [AdminSupportController::class, 'show'])->name('support.show');
+            Route::post('/destek/{ticket}/yanit', [AdminSupportController::class, 'reply'])->name('support.reply');
+            Route::post('/destek/{ticket}/kapat', [AdminSupportController::class, 'close'])->name('support.close');
+        });
+
+        Route::middleware('can:content.manage')->group(function (): void {
+            Route::get('/icerik/sayfalar', [ContentController::class, 'pages'])->name('content.pages');
+            Route::get('/icerik/sayfalar/yeni', [ContentController::class, 'editPage'])->name('content.pages.create');
+            Route::post('/icerik/sayfalar', [ContentController::class, 'savePage'])->name('content.pages.store');
+            Route::get('/icerik/sayfalar/{page}', [ContentController::class, 'editPage'])->name('content.pages.edit');
+            Route::put('/icerik/sayfalar/{page}', [ContentController::class, 'savePage'])->name('content.pages.update');
+            Route::delete('/icerik/sayfalar/{page}', [ContentController::class, 'destroyPage'])->name('content.pages.destroy');
+            Route::get('/icerik/sss', [ContentController::class, 'faqs'])->name('content.faqs');
+            Route::post('/icerik/sss', [ContentController::class, 'saveFaq'])->name('content.faqs.store');
+            Route::put('/icerik/sss/{faq}', [ContentController::class, 'saveFaq'])->name('content.faqs.update');
+            Route::delete('/icerik/sss/{faq}', [ContentController::class, 'destroyFaq'])->name('content.faqs.destroy');
+            Route::get('/icerik/bannerlar', [ContentController::class, 'banners'])->name('content.banners');
+            Route::post('/icerik/bannerlar', [ContentController::class, 'saveBanner'])->name('content.banners.store');
+            Route::put('/icerik/bannerlar/{banner}', [ContentController::class, 'saveBanner'])->name('content.banners.update');
+            Route::delete('/icerik/bannerlar/{banner}', [ContentController::class, 'destroyBanner'])->name('content.banners.destroy');
+            Route::get('/seo', [AdminSettingsController::class, 'seo'])->name('seo');
+            Route::put('/seo', [AdminSettingsController::class, 'updateSeo'])->name('seo.update');
+        });
+
+        Route::middleware('can:settings.manage')->group(function (): void {
+            Route::get('/ayarlar', [AdminSettingsController::class, 'edit'])->name('settings');
+            Route::put('/ayarlar', [AdminSettingsController::class, 'update'])->name('settings.update');
+            Route::put('/ayarlar/eposta', [AdminSettingsController::class, 'updateMail'])->name('settings.mail');
+            Route::post('/ayarlar/eposta/test', [AdminSettingsController::class, 'testMail'])->middleware('throttle:5,1')->name('settings.mail.test');
         });
 
         Route::get('/loglar', AdminLogController::class)->middleware('can:logs.view')->name('logs');

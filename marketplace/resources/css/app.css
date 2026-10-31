@@ -148,3 +148,20 @@
         color-mix(in oklab, var(--color-katman-500) 14%, transparent) 8px
     );
 }
+
+/* Markdown içerik sayfaları (yasal metinler, blog) */
+@utility prose-katman {
+    @apply text-[0.95rem] leading-relaxed text-muted;
+
+    & h2 { @apply mt-8 mb-3 text-xl font-bold text-ink; }
+    & h3 { @apply mt-6 mb-2 text-lg font-bold text-ink; }
+    & p { @apply my-3; }
+    & ul { @apply my-3 list-disc pl-6; }
+    & ol { @apply my-3 list-decimal pl-6; }
+    & li { @apply my-1; }
+    & a { @apply font-medium text-katman-700 underline dark:text-katman-300; }
+    & strong { @apply text-ink; }
+    & blockquote { @apply my-4 rounded-xl border-l-4 border-filament-400 bg-filament-400/10 px-4 py-2 text-ink; }
+    & table { @apply my-4 w-full text-sm; }
+    & th, & td { @apply border border-line px-3 py-2 text-left; }
+}

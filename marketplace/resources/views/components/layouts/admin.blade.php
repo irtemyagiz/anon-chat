@@ -14,6 +14,10 @@
         ['admin.commissions.index', 'sparkles', __('Komisyon'), 'commissions.manage'],
         ['admin.categories.index', 'menu', __('Kategoriler'), 'categories.manage'],
         ['admin.file-formats.index', 'upload', __('Dosya formatları'), 'settings.manage'],
+        ['admin.support.index', 'mail', __('Destek talepleri'), 'support.manage'],
+        ['admin.content.pages', 'sparkles', __('İçerik'), 'content.manage'],
+        ['admin.seo', 'globe', __('SEO'), 'content.manage'],
+        ['admin.settings', 'menu', __('Sistem ayarları'), 'settings.manage'],
         ['admin.logs', 'shield', __('Loglar'), 'logs.view'],
     ];
 @endphp

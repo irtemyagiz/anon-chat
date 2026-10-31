@@ -43,6 +43,27 @@
         </div>
     </section>
 
+    @if ($banners->isNotEmpty())
+        <section class="container-page pt-10" x-data="{ active: 0, count: {{ $banners->count() }} }" x-init="count > 1 && setInterval(() => active = (active + 1) % count, 6000)">
+            <div class="relative overflow-hidden rounded-[2rem]">
+                @foreach ($banners as $index => $banner)
+                    <div x-show="active === {{ $index }}" x-transition.opacity @if ($index > 0) x-cloak @endif class="relative flex min-h-48 items-end bg-katman-800 p-6 text-white sm:p-10" @if ($banner->image_path) style="background-image: linear-gradient(to top, rgb(3 42 40 / .85), rgb(3 42 40 / .2)), url('{{ Storage::disk(config('marketplace.storage.public_media_disk'))->url($banner->image_path) }}'); background-size: cover; background-position: center" @endif>
+                        <div class="max-w-xl">
+                            <h2 class="text-2xl font-extrabold sm:text-3xl">{{ $banner->title[app()->getLocale()] ?? $banner->title['tr'] }}</h2>
+                            @if ($banner->subtitle)<p class="mt-2 text-katman-100">{{ $banner->subtitle[app()->getLocale()] ?? $banner->subtitle['tr'] ?? '' }}</p>@endif
+                            @if ($banner->link_url)<a href="{{ $banner->link_url }}" class="btn-accent mt-4">{{ $banner->link_label['tr'] ?? __('İncele') }}</a>@endif
+                        </div>
+                    </div>
+                @endforeach
+                @if ($banners->count() > 1)
+                    <div class="absolute right-5 bottom-5 flex gap-1.5">
+                        @foreach ($banners as $index => $banner)<button type="button" @click="active = {{ $index }}" :class="active === {{ $index }} ? 'bg-white' : 'bg-white/40'" class="size-2.5 rounded-full" aria-label="{{ $index + 1 }}"></button>@endforeach
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endif
+
     {{-- 3. Kategori kartları --}}
     <section class="container-page py-16">
         <x-section-heading :eyebrow="__('Keşfet')" :title="__('Kategoriler')" :href="route('categories.index')"/>

@@ -7,6 +7,7 @@
         ['account.following', 'store', __('Takip ettiklerim')],
         ['wallet', 'wallet', __('Cüzdanım')],
         ['account.notifications', 'mail', __('Bildirimler')],
+        ['support.index', 'shield', __('Destek')],
         ['account.settings', 'user', __('Profil ve ayarlar')],
     ];
 @endphp

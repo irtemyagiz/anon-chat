@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             FileFormatSeeder::class,
             PointPackageSeeder::class,
             PaymentProviderSeeder::class,
+            ContentSeeder::class,
         ]);
     }
 }

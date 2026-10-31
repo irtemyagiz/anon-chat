@@ -53,8 +53,32 @@ class SettingsService
         ]);
 
         Cache::forget(self::CACHE_KEY);
+        $this->applyToConfig();
 
         $this->audit->record('settings.updated', null, [$key => $encrypted ? '***' : $old], [$key => $encrypted ? '***' : $value], $actor);
+    }
+
+    /**
+     * Panelden değiştirilen site adı ve SMTP ayarlarını çalışan yapılandırmaya uygular.
+     */
+    public function applyToConfig(): void
+    {
+        if (filled($name = $this->get('site.name'))) {
+            config(['app.name' => $name]);
+        }
+
+        if (filled($host = $this->get('mail.host'))) {
+            config([
+                'mail.default' => 'smtp',
+                'mail.mailers.smtp.host' => $host,
+                'mail.mailers.smtp.port' => (int) $this->get('mail.port'),
+                'mail.mailers.smtp.username' => $this->get('mail.username'),
+                'mail.mailers.smtp.password' => $this->get('mail.password'),
+                'mail.mailers.smtp.scheme' => $this->get('mail.encryption') === 'ssl' ? 'smtps' : null,
+                'mail.from.address' => $this->get('mail.from_address'),
+                'mail.from.name' => $this->get('mail.from_name'),
+            ]);
+        }
     }
 
     /**

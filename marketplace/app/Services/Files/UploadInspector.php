@@ -4,6 +4,7 @@ namespace App\Services\Files;
 
 use App\Exceptions\InvalidUploadException;
 use App\Models\FileFormat;
+use App\Services\Settings\SettingsService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use ZipArchive;
@@ -48,7 +49,7 @@ class UploadInspector
             throw new InvalidUploadException(__(':ext uzantılı dosyalar kabul edilmiyor.', ['ext' => strtoupper($extension ?: '?')]));
         }
 
-        $maxBytes ??= (int) config('marketplace.storage.max_file_size_mb') * 1024 * 1024;
+        $maxBytes ??= app(SettingsService::class)->integer('storage.max_file_size_mb') * 1024 * 1024;
         $size = (int) $file->getSize();
 
         if ($size <= 0 || $size > $maxBytes) {

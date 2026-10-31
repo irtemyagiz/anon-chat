@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\CreatorStatus;
+use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Collection;
 use App\Models\CreatorProfile;
@@ -32,6 +33,7 @@ class HomeController extends Controller
                 ->withCount(['products' => fn ($q) => $q->published()])
                 ->orderBy('sort_order')
                 ->get(),
+            'banners' => Banner::query()->live('home')->get(),
             'collections' => Collection::query()
                 ->where('is_public', true)
                 ->whereHas('products', fn ($q) => $q->published())

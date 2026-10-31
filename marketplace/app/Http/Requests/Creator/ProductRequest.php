@@ -4,6 +4,7 @@ namespace App\Http\Requests\Creator;
 
 use App\Models\Category;
 use App\Services\Points\PointConverter;
+use App\Services\Settings\SettingsService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -52,7 +53,7 @@ class ProductRequest extends FormRequest
             'images' => ['nullable', 'array', 'max:12'],
             'images.*' => ['file', 'max:10240'],
             'files' => ['nullable', 'array', 'max:20'],
-            'files.*' => ['file', 'max:'.((int) config('marketplace.storage.max_file_size_mb') * 1024)],
+            'files.*' => ['file', 'max:'.(app(SettingsService::class)->integer('storage.max_file_size_mb') * 1024)],
             'preview' => ['nullable', 'file', 'max:'.((int) config('marketplace.storage.max_preview_size_mb') * 1024)],
         ];
     }

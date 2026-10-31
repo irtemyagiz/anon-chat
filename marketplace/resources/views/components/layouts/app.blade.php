@@ -1,6 +1,10 @@
-@props(['title' => null, 'description' => null, 'noindex' => false])
+@props(['title' => null, 'description' => null, 'noindex' => false, 'image' => null])
 @php
+    $title ??= $routeSeo?->meta_title;
+    $description ??= $routeSeo?->meta_description;
+    $noindex = $noindex || ($routeSeo?->noindex ?? false);
     $pageTitle = $title ? $title.' · '.config('app.name') : config('app.name').' — '.__('3D baskı tasarım pazaryeri');
+    $ogImage = $image ?? $defaultOgImage;
     $isDark = $themePreference === 'dark';
 @endphp
 <!DOCTYPE html>
@@ -19,6 +23,11 @@
     <meta property="og:title" content="{{ $pageTitle }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:description" content="{{ $description ?? __('Bağımsız tasarımcıların 3D baskıya hazır STL, 3MF ve OBJ modellerini keşfet, puanla satın al veya ücretsiz indir.') }}">
+    @if ($ogImage)
+        <meta property="og:image" content="{{ $ogImage }}">
+        <meta name="twitter:card" content="summary_large_image">
+    @endif
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     {{-- "system" tercihinde ilk boyamadan önce işletim sistemi temasını uygula --}}
     <script>
@@ -37,7 +46,9 @@
 
 <header x-data="{ mobile: false }" class="sticky top-0 z-40 border-b border-line bg-canvas/85 backdrop-blur-md">
     <div class="container-page flex h-16 items-center gap-4">
-        <a href="{{ route('home') }}" class="shrink-0" aria-label="{{ config('app.name') }}"><x-logo/></a>
+        <a href="{{ route('home') }}" class="shrink-0" aria-label="{{ config('app.name') }}">
+            @if ($siteLogo)<img src="{{ $siteLogo }}" alt="{{ config('app.name') }}" class="h-8 w-auto">@else<x-logo/>@endif
+        </a>
 
         <form action="{{ route('products.index') }}" method="GET" role="search" class="relative hidden max-w-md flex-1 md:block">
             <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle"/>
@@ -209,7 +220,18 @@
                 <li><a href="{{ route('products.index', ['fiyat' => 'ucretsiz']) }}" class="hover:text-ink">{{ __('Ücretsiz Modeller') }}</a></li>
                 <li><a href="{{ route('designers.index') }}" class="hover:text-ink">{{ __('Tasarımcılar') }}</a></li>
                 <li><a href="{{ route('creator.apply') }}" class="hover:text-ink">{{ __('Creator ol') }}</a></li>
+                <li><a href="{{ route('blog.index') }}" class="hover:text-ink">{{ __('Blog') }}</a></li>
+                <li><a href="{{ route('faq') }}" class="hover:text-ink">{{ __('Sık sorulan sorular') }}</a></li>
+                <li><a href="{{ auth()->check() ? route('support.create') : route('login') }}" class="hover:text-ink">{{ __('Destek') }}</a></li>
             </ul>
+            @if ($footerPages->isNotEmpty())
+                <h3 class="mt-6 text-sm font-bold">{{ __('Kurumsal ve yasal') }}</h3>
+                <ul class="mt-3 space-y-2 text-sm text-muted">
+                    @foreach ($footerPages as $footerPage)
+                        <li><a href="{{ route('pages.show', $footerPage->slug) }}" class="hover:text-ink">{{ $footerPage->title }}</a></li>
+                    @endforeach
+                </ul>
+            @endif
         </div>
         <div>
             <h3 class="text-sm font-bold">{{ __('Tercihler') }}</h3>
