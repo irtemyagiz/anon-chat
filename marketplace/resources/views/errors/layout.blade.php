@@ -7,7 +7,7 @@
     <meta name="robots" content="noindex">
     <title>@yield('title') · {{ config('app.name') }}</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
-    <script>if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');</script>
+    <script nonce="{{ Vite::cspNonce() }}">if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');</script>
     @vite(['resources/css/app.css'])
 </head>
 <body class="flex min-h-screen flex-col">

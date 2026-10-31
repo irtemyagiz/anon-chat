@@ -3,7 +3,12 @@
     <a href="{{ route('products.show', $product) }}" class="block">
         <div class="relative aspect-[4/3] overflow-hidden bg-surface-2">
             @if ($product->cover_image_path)
-                <img src="{{ Storage::disk(config('marketplace.storage.public_media_disk'))->url($product->cover_image_path) }}" alt="{{ $product->title }}" loading="lazy" class="size-full object-cover transition duration-300 group-hover:scale-[1.03]">
+                @php
+                    $mediaDisk = Storage::disk(config('marketplace.storage.public_media_disk'));
+                    $small = $mediaDisk->url(\App\Services\Files\ImageProcessor::variantPath($product->cover_image_path, 480));
+                    $medium = $mediaDisk->url(\App\Services\Files\ImageProcessor::variantPath($product->cover_image_path, 960));
+                @endphp
+                <img src="{{ $medium }}" srcset="{{ $small }} 480w, {{ $medium }} 960w" sizes="(min-width: 1280px) 300px, (min-width: 640px) 45vw, 92vw" alt="{{ $product->title }}" loading="lazy" decoding="async" class="size-full object-cover transition duration-300 group-hover:scale-[1.03]">
             @else
                 <div class="layer-lines flex size-full items-center justify-center text-subtle"><x-icon name="cube" class="size-10"/></div>
             @endif

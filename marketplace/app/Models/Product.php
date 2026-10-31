@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ProductStatus;
 use App\Policies\ProductPolicy;
+use App\Services\Catalog\CatalogCache;
 use App\Services\Points\PointConverter;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -69,6 +70,15 @@ class Product extends Model
         static::saving(function (Product $product): void {
             $product->is_free = (int) $product->price_cents === 0;
         });
+
+        /** Ana sayfa önbelleği, bir ürün yayına girip çıktığında veya öne çıkarıldığında yenilenir. */
+        $forgetHomeCache = function (Product $product): void {
+            if ($product->wasChanged(['status', 'is_featured', 'category_id', 'price_cents']) || ! $product->exists || $product->wasRecentlyCreated) {
+                CatalogCache::forget();
+            }
+        };
+        static::saved($forgetHomeCache);
+        static::deleted($forgetHomeCache);
     }
 
     public function getRouteKeyName(): string

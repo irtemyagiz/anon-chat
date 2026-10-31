@@ -35,7 +35,7 @@
     @endif
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     {{-- "system" tercihinde ilk boyamadan önce işletim sistemi temasını uygula --}}
-    <script>
+    <script nonce="{{ Vite::cspNonce() }}">
         (function () {
             var pref = document.documentElement.dataset.theme;
             if (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) {

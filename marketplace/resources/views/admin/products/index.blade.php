@@ -10,7 +10,7 @@
             @foreach ($products as $product)
                 <a href="{{ route('admin.products.show', $product) }}" class="flex items-center gap-4 p-4 hover:bg-surface-2">
                     <div class="size-14 shrink-0 overflow-hidden rounded-xl bg-surface-2">
-                        @if ($product->cover_image_path)<img src="{{ Storage::disk(config('marketplace.storage.public_media_disk'))->url($product->cover_image_path) }}" alt="" class="size-full object-cover" loading="lazy">@endif
+                        @if ($product->cover_image_path)<img src="{{ Storage::disk(config('marketplace.storage.public_media_disk'))->url(\App\Services\Files\ImageProcessor::variantPath($product->cover_image_path, 480)) }}" alt="" class="size-full object-cover" loading="lazy">@endif
                     </div>
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2"><span class="truncate font-semibold">{{ $product->title }}</span><x-status-badge :status="$product->status"/>@if ($product->is_featured)<span class="chip">{{ __('Öne çıkan') }}</span>@endif</div>

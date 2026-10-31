@@ -258,6 +258,30 @@ bildirim gider. Satışı veya indirme hakkı olan ürün silinemez, yalnızca y
 | Hassas veri | Şifreli cast (vergi no, kimlik no, IBAN, 2FA secret) |
 | Denetim | Puan düzeltme, kur, komisyon, iade, hakediş ve ayar değişiklikleri `audit_logs` tablosuna |
 | Geliştirme sıkılığı | Production dışında lazy loading ve sessizce atılan alanlar hata verir |
+| HTTP başlıkları | `SecurityHeaders` middleware: istek başına nonce'lu CSP (production'da uygulanır, diğer ortamlarda yalnızca raporlanır), `frame-ancestors 'none'`, `object-src 'none'`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`; HTTPS üzerinde production'da HSTS. Alpine.js ifadeleri için `unsafe-eval` gerekir; satır içi olay işleyicisi kullanılmaz. Video yalnızca youtube-nocookie ve Vimeo'dan gömülebilir |
+| Oturum çerezi | `HttpOnly`, `SameSite=Lax`; production'da varsayılan olarak `Secure` |
+| Bağımlılıklar | `composer audit` ve `npm audit` temiz; CI her değişiklikte tekrar denetler |
+| Önbellek | `cache.serializable_classes` kapalı: önbellekten nesne geri yüklenmez (unserialize saldırılarına karşı); önbellekte yalnızca diziler tutulur |
+
+### Performans
+
+- **Görseller:** yüklenen her ürün görseli WebP'ye çevrilir ve 480/960 px küçük boyutları
+  üretilir (`ImageProcessor::PRODUCT_VARIANTS`). Kartlar `srcset` + `sizes` ile ekran
+  genişliğine uygun dosyayı, galeri küçük resimleri 480 px'i yükler; tüm liste görselleri
+  `loading="lazy"`. Var olan görseller için `php artisan marketplace:image-variants`.
+  AVIF kullanılmıyor: GD'nin AVIF desteği çoğu cPanel sunucusunda yok ve kodlama yavaş.
+- **Ana sayfa:** vitrin sıralamaları ve kategori sayıları 5 dakika önbelleğe alınır
+  (`CatalogCache`); ürün yayına girip çıktığında veya öne çıkarıldığında önbellek
+  hemen temizlenir. Önbellekteki kimlikler yüklenirken yayında olup olmadıkları tekrar kontrol edilir.
+- **Ön yüz:** Three.js ve QR kod kütüphanesi yalnızca gerektiğinde ayrı parça olarak yüklenir;
+  ana JS paketi küçük kalır. CSS/JS bir CDN'den sunulacaksa `ASSET_URL` yeterlidir.
+- **Sorgular:** listeler ilişkileri önceden yükler (N+1 yok; production dışında lazy loading hata verir).
+
+### Sürekli entegrasyon
+
+`.github/workflows/marketplace.yml`: her push/PR'da Pint stil kontrolü, testler (SQLite ve
+MariaDB 10.11), gerçek süreçlerle eşzamanlı harcama testleri, `composer audit`, ön yüz
+derlemesi ve `npm audit`.
 
 ## 10. Faz durumu
 
@@ -285,11 +309,13 @@ bildirim gider. Satışı veya indirme hakkı olan ürün silinemez, yalnızca y
 | 22. Yorum ve değerlendirme | ✅ Yıldızlı değerlendirme yalnızca ürünü edinenler; satın alanlara "doğrulanmış satın alma" rozeti; creator yanıtı; yorum + yanıt; spam koruması; 3 şikâyette otomatik gizleme; içerik/telif şikâyeti (ziyaretçi e-postayla); yönetici moderasyonu |
 | 25. Yönetim paneli | ✅ Dashboard (11 metrik + bekleyen işler), creator başvuruları, ürün moderasyonu (onay/ret/yayından kaldırma/öne çıkarma), kullanıcılar (arama, askıya alma, rol, puan düzeltme, işlem ve satın alma geçmişi), puan paketleri + minimum yükleme + ekonomi raporu, ödemeler (iade, sağlayıcılar, webhook kayıtları, itirazlar), döviz kuru (manuel/otomatik/geçmiş/sağlayıcı kayıtları), komisyon (varsayılan + creator/kategori/kampanya kuralları), kategoriler (görsel, TR/EN SEO), dosya formatları, hakedişler ve satıcı doğrulamaları, içerik/SEO, sistem ayarları, destek, loglar |
 | 23. Arama ve filtreleme | ✅ Metin, kategori, etiket, ücretli/ücretsiz, dosya formatı, ticari lisans, baskı teknolojisi, USD fiyat aralığı; 8 sıralama; başlıkta yazarken ürün/tasarımcı/kategori/etiket önerileri (klavyeyle gezinme) |
-| 29. Otomatik testler | ✅ 213 test + 2 eşzamanlılık testi (SQLite ve MariaDB) |
+| 27. Güvenlik sertleştirme | ✅ Nonce'lu CSP, HSTS, çerçeveleme/MIME/referrer/izin başlıkları, güvenli oturum çerezi, bağımlılık denetimi (bkz. §9) |
+| 28. Performans | ✅ Görsel küçük boyutları + srcset + lazy loading, ana sayfa önbelleği (anında temizlenir), tembel yüklenen 3D/QR kütüphaneleri, CDN desteği |
+| 29. Otomatik testler ve CI | ✅ 218 test + 2 eşzamanlılık testi (SQLite ve MariaDB); GitHub Actions iş akışı |
 | 24. Bildirimler | ✅ 17 tür; site içi + kategori bazlı e-posta tercihi; yönetici uyarıları izne göre |
 | 26. SEO ve çok dillilik | ✅ Sitemap (bölümlü), robots.txt, JSON-LD (Product, BreadcrumbList, WebSite+SearchAction, Organization, ProfilePage), og:image, hreflang + ?lang=en, sayfa bazında meta ayarları; Türkçe/İngilizce arayüz (yönetim paneli Türkçe), çeviri kapsamı testi |
 | — İçerik, destek, KVKK | ✅ Sayfa/blog/SSS/banner yönetimi, yasal metin taslakları (TR+EN, hukuki inceleme gerekli), sistem/SMTP/bakım modu ayarları, destek talepleri ve puan iadesi talebi, hesap silme (anonimleştirme) |
-| 14, 27, 28, 30 | ⏳ Sıradaki adımlar: güvenlik başlıkları, performans (görsel varyantları, önbellek), gerçek ödeme sağlayıcıları, cPanel dağıtım rehberi |
+| 14, 30 | ⏳ Sıradaki adımlar: gerçek ödeme sağlayıcı adaptörleri ve REST API, cPanel dağıtım rehberi |
 
 ## 11. Karar bekleyen noktalar
 

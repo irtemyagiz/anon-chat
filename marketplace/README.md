@@ -46,5 +46,6 @@ başvurusu, puan yükleme akışı, güvenli indirme, creator paneli ve dosya y�
 2FA, rol yükseltme koruması, hakediş akışı (IBAN/TCKN doğrulaması) ve topluluk özellikleri
 (değerlendirme, yorum spam koruması, koleksiyon gizliliği), bildirimler, içerik ve destek,
 SEO ve çeviri kapsamı, arama ve filtreler, kuponlar, creator istatistikleri, parçalı
-yükleme ve otomatik önizleme için 213 test bulunur.
+yükleme, otomatik önizleme, güvenlik başlıkları ve ana sayfa önbelleği için 218 test bulunur.
+Her değişiklikte GitHub Actions bu testleri SQLite ve MariaDB üzerinde çalıştırır.
 Ayrıca MySQL/MariaDB gerektiren 2 eşzamanlılık testi vardır (`--group=concurrency`).

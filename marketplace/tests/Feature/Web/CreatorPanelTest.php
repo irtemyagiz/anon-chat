@@ -11,6 +11,7 @@ use App\Models\ProductFile;
 use App\Models\ProductImage;
 use App\Models\User;
 use App\Notifications\ProductUpdatedNotification;
+use App\Services\Files\ImageProcessor;
 use App\Services\Files\Scanners\FileScanner;
 use App\Services\Files\Scanners\ScanResult;
 use App\Services\Sales\PurchaseService;
@@ -113,6 +114,17 @@ class CreatorPanelTest extends TestCase
         $image = $product->images()->sole();
         $this->assertStringEndsWith('.webp', $image->path, 'Görseller yeniden kodlanır');
         $this->assertSame($image->path, $product->cover_image_path);
+
+        foreach ([480, 960] as $width) {
+            $variant = ImageProcessor::variantPath($image->path, $width);
+            Storage::disk('public')->assertExists($variant);
+            $this->assertSame($variant, $image->variants['sizes'][$width]);
+            $this->assertSame($width, getimagesizefromstring(Storage::disk('public')->get($variant))[0], 'Küçük boyut gerçekten küçültülür');
+        }
+
+        $this->delete(route('creator.products.images.destroy', [$product, $image]));
+        Storage::disk('public')->assertMissing($image->path);
+        Storage::disk('public')->assertMissing(ImageProcessor::variantPath($image->path, 480));
     }
 
     public function test_coarse_preview_is_generated_from_clean_stl_when_creator_uploads_none(): void

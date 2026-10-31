@@ -147,6 +147,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | HTTP güvenlik başlıkları
+    |--------------------------------------------------------------------------
+    |
+    | csp: "enforce" (uygula), "report" (yalnızca tarayıcı konsolunda raporla), "off".
+    | Varsayılan: production'da enforce, diğer ortamlarda report. Görseller veya
+    | önizlemeler CDN / S3 üzerinden sunuluyorsa alan adı otomatik eklenir;
+    | ek kaynaklar CSP_EXTRA_SOURCES ile (boşlukla ayrılmış) verilebilir.
+    |
+    */
+
+    'security' => [
+        'csp' => in_array(env('SECURITY_CSP'), ['enforce', 'report', 'off'], true) ? env('SECURITY_CSP') : (env('APP_ENV') === 'production' ? 'enforce' : 'report'),
+        'csp_extra_sources' => env('CSP_EXTRA_SOURCES', ''),
+        'hsts_max_age' => (int) env('HSTS_MAX_AGE', 31536000),
+        'frame_sources' => ['https://www.youtube-nocookie.com', 'https://player.vimeo.com'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Zararlı dosya taraması
     |--------------------------------------------------------------------------
     |

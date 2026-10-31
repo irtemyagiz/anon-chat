@@ -2,12 +2,14 @@
 
 use App\Enums\CreatorStatus;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\Role;
 use App\Models\UploadSession;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Currency\ExchangeRateService;
 use App\Services\Earnings\CreatorEarningService;
+use App\Services\Files\ImageProcessor;
 use App\Services\Products\ProductManager;
 use App\Services\Settings\SettingsService;
 use Illuminate\Support\Facades\Artisan;
@@ -61,6 +63,20 @@ Artisan::command('marketplace:prune-uploads', function (): void {
 })->purpose('Tamamlanmamış ve süresi dolmuş parçalı yüklemeleri temizler');
 
 Schedule::command('marketplace:prune-uploads')->hourly()->withoutOverlapping();
+
+Artisan::command('marketplace:image-variants', function (ImageProcessor $images): void {
+    $created = 0;
+
+    ProductImage::query()->chunkById(200, function ($batch) use ($images, &$created): void {
+        foreach ($batch as $image) {
+            $created += $images->backfillVariants($image->disk, $image->path, ImageProcessor::PRODUCT_VARIANTS);
+            $sizes = collect(ImageProcessor::PRODUCT_VARIANTS)->mapWithKeys(fn (int $width) => [$width => ImageProcessor::variantPath($image->path, $width)])->all();
+            $image->forceFill(['variants' => [...($image->variants ?? []), 'sizes' => $sizes]])->save();
+        }
+    });
+
+    $this->info("{$created} küçük görsel üretildi.");
+})->purpose('Ürün görsellerinin eksik küçük boyutlarını (480/960 px) üretir');
 
 Artisan::command('marketplace:make-admin {email : Yönetici yapılacak kullanıcının e-posta adresi}', function (string $email): int {
     $user = User::query()->where('email', Str::lower($email))->first();

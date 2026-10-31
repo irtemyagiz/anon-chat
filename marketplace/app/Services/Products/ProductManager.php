@@ -164,12 +164,12 @@ class ProductManager
         $order = (int) $product->images()->max('sort_order');
 
         foreach ($uploads as $upload) {
-            $stored = $this->images->store($upload, $disk, "products/{$product->uuid}/images");
+            $stored = $this->images->store($upload, $disk, "products/{$product->uuid}/images", variantWidths: ImageProcessor::PRODUCT_VARIANTS);
 
             $product->images()->create([
                 'disk' => $disk,
                 'path' => $stored['path'],
-                'variants' => ['width' => $stored['width'], 'height' => $stored['height']],
+                'variants' => ['width' => $stored['width'], 'height' => $stored['height'], 'sizes' => $stored['variants']],
                 'alt_text' => Str::limit($product->title, 150, ''),
                 'sort_order' => $order += 10,
             ]);
@@ -180,7 +180,7 @@ class ProductManager
 
     public function removeImage(ProductImage $image): void
     {
-        Storage::disk($image->disk)->delete($image->path);
+        Storage::disk($image->disk)->delete([$image->path, ...array_map(fn (int $width) => ImageProcessor::variantPath($image->path, $width), ImageProcessor::PRODUCT_VARIANTS)]);
         $product = $image->product;
         $image->delete();
 

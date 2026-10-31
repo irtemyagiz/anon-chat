@@ -48,9 +48,13 @@
         <div class="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
             {{-- Sol: görseller, 3D önizleme, video --}}
             @php
-                $gallery = $product->images->map(fn ($image) => Storage::disk($image->disk)->url($image->path))
-                    ->whenEmpty(fn ($urls) => $product->cover_image_path ? collect([$mediaDisk->url($product->cover_image_path)]) : $urls)
-                    ->values();
+                /** full: büyütme, medium: ana görünüm (960 px), thumb: küçük resimler (480 px). Eski görsellerde boyutlar yoksa ana dosya kullanılır. */
+                $gallery = $product->images->map(function ($image) {
+                    $disk = Storage::disk($image->disk);
+                    $sizes = $image->variants['sizes'] ?? [];
+
+                    return ['full' => $disk->url($image->path), 'medium' => $disk->url($sizes[960] ?? $image->path), 'thumb' => $disk->url($sizes[480] ?? $image->path)];
+                })->whenEmpty(fn ($items) => $product->cover_image_path ? collect([array_fill_keys(['full', 'medium', 'thumb'], $mediaDisk->url($product->cover_image_path))]) : $items)->values();
                 $previewUrl = $product->preview_model_path ? $mediaDisk->url($product->preview_model_path) : null;
                 $videoUrl = $product->videoEmbedUrl();
             @endphp
@@ -71,7 +75,7 @@
                     <div class="card relative aspect-[4/3] overflow-hidden">
                         <template x-if="images.length">
                             <button type="button" @click="zoom = true" class="size-full cursor-zoom-in" aria-label="{{ __('Görseli büyüt') }}">
-                                <img :src="images[active]" alt="{{ $product->title }}" class="size-full object-contain">
+                                <img :src="images[active].medium" :srcset="`${images[active].medium} 960w, ${images[active].full} 2400w`" sizes="(min-width: 1024px) 760px, 100vw" alt="{{ $product->title }}" class="size-full object-contain">
                             </button>
                         </template>
                         <template x-if="! images.length">
@@ -79,9 +83,9 @@
                         </template>
                     </div>
                     <div x-show="images.length > 1" class="mt-3 flex gap-2 overflow-x-auto">
-                        <template x-for="(src, index) in images" :key="index">
+                        <template x-for="(image, index) in images" :key="index">
                             <button type="button" @click="active = index" :class="active === index ? 'ring-2 ring-katman-500' : 'opacity-70'" class="size-20 shrink-0 overflow-hidden rounded-xl border border-line">
-                                <img :src="src" alt="" class="size-full object-cover" loading="lazy">
+                                <img :src="image.thumb" alt="" class="size-full object-cover" loading="lazy">
                             </button>
                         </template>
                     </div>
@@ -122,7 +126,7 @@
 
                 {{-- Tam ekran görsel --}}
                 <div x-show="zoom" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" @click.self="zoom = false" role="dialog" aria-modal="true">
-                    <img :src="images[active]" alt="{{ $product->title }}" class="max-h-full max-w-full object-contain">
+                    <img :src="images[active].full" alt="{{ $product->title }}" class="max-h-full max-w-full object-contain">
                     <button type="button" @click="zoom = false" class="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20" aria-label="{{ __('Kapat') }}"><x-icon name="x" class="size-6"/></button>
                     <button type="button" x-show="images.length > 1" @click="active = (active - 1 + images.length) % images.length" class="absolute left-4 rounded-full bg-white/10 px-3 py-2 text-white hover:bg-white/20" aria-label="{{ __('Önceki') }}">‹</button>
                     <button type="button" x-show="images.length > 1" @click="active = (active + 1) % images.length" class="absolute right-4 rounded-full bg-white/10 px-3 py-2 text-white hover:bg-white/20" aria-label="{{ __('Sonraki') }}">›</button>

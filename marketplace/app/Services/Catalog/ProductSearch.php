@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\CreatorProfile;
 use App\Models\Product;
 use App\Models\Tag;
+use App\Services\Files\ImageProcessor;
 use App\Services\Points\PointConverter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -171,7 +172,7 @@ class ProductSearch
             'products' => $products->map(fn (Product $product) => [
                 'title' => $product->title,
                 'url' => route('products.show', $product),
-                'image' => $product->cover_image_path ? $disk->url($product->cover_image_path) : null,
+                'image' => $product->cover_image_path ? $disk->url(ImageProcessor::variantPath($product->cover_image_path, 480)) : null,
                 'creator' => $product->creator?->creatorProfile?->store_name,
             ])->all(),
             'designers' => $designers->map(fn (CreatorProfile $profile) => ['name' => $profile->store_name, 'url' => route('designers.show', $profile)])->all(),

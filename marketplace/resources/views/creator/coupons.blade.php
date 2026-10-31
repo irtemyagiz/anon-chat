@@ -82,7 +82,7 @@
                                             <button class="btn-secondary px-3 py-1.5 text-xs">{{ $coupon->is_active ? __('Durdur') : __('Etkinleştir') }}</button>
                                         </form>
                                         @if ($coupon->redemptions_count === 0)
-                                            <form method="POST" action="{{ route('creator.coupons.destroy', $coupon) }}" onsubmit="return confirm(@js(__('Kupon silinsin mi?')))">
+                                            <form method="POST" action="{{ route('creator.coupons.destroy', $coupon) }}" x-data @submit="if (! confirm(@js(__('Kupon silinsin mi?')))) $event.preventDefault()">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button class="btn-ghost px-3 py-1.5 text-xs text-red-600">{{ __('Sil') }}</button>

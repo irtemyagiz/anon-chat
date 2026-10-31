@@ -10,7 +10,7 @@
                 <div class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                     <div class="size-16 shrink-0 overflow-hidden rounded-xl bg-surface-2">
                         @if ($product->cover_image_path)
-                            <img src="{{ Storage::disk(config('marketplace.storage.public_media_disk'))->url($product->cover_image_path) }}" alt="" class="size-full object-cover" loading="lazy">
+                            <img src="{{ Storage::disk(config('marketplace.storage.public_media_disk'))->url(\App\Services\Files\ImageProcessor::variantPath($product->cover_image_path, 480)) }}" alt="" class="size-full object-cover" loading="lazy">
                         @else
                             <div class="layer-lines flex size-full items-center justify-center text-subtle"><x-icon name="cube"/></div>
                         @endif

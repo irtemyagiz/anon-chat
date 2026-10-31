@@ -9,7 +9,7 @@
                 @php $product = $entitlement->product; @endphp
                 <div class="card flex flex-col gap-4 p-4 sm:flex-row">
                     <div class="size-20 shrink-0 overflow-hidden rounded-xl bg-surface-2">
-                        @if ($product->cover_image_path)<img src="{{ Storage::disk(config('marketplace.storage.public_media_disk'))->url($product->cover_image_path) }}" alt="" class="size-full object-cover" loading="lazy">@endif
+                        @if ($product->cover_image_path)<img src="{{ Storage::disk(config('marketplace.storage.public_media_disk'))->url(\App\Services\Files\ImageProcessor::variantPath($product->cover_image_path, 480)) }}" alt="" class="size-full object-cover" loading="lazy">@endif
                     </div>
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">

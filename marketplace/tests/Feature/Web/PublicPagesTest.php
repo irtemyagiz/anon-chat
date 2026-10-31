@@ -3,10 +3,12 @@
 namespace Tests\Feature\Web;
 
 use App\Enums\CreatorStatus;
+use App\Enums\ProductStatus;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\InteractsWithMarketplace;
 use Tests\TestCase;
@@ -58,6 +60,21 @@ class PublicPagesTest extends TestCase
         $this->get('/modeller')->assertSee($published->title)->assertDontSee($draft->title);
         $this->get(route('products.show', $published))->assertOk()->assertSee('399');
         $this->get(route('products.show', $draft))->assertNotFound();
+    }
+
+    public function test_home_page_cache_follows_publishing_changes(): void
+    {
+        $this->get('/')->assertSee('Katalog ilk tasarımlarını bekliyor');
+
+        $product = $this->publishedProduct(399);
+        $this->get('/')->assertSee($product->title, 'Yayına giren ürün önbellek beklenmeden görünür');
+
+        $product->forceFill(['status' => ProductStatus::Unpublished])->save();
+        $this->get('/')->assertDontSee($product->title)->assertSee('Katalog ilk tasarımlarını bekliyor');
+
+        $other = $this->publishedProduct(500);
+        DB::table('products')->where('id', $other->id)->update(['status' => ProductStatus::Unpublished->value]);
+        $this->get('/')->assertDontSee($other->title, 'Önbellekteki kimlikler yayında olup olmadıkları kontrol edilerek yüklenir');
     }
 
     public function test_search_filters_and_category_listing(): void

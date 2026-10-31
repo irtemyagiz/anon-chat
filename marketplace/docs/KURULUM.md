@@ -207,7 +207,9 @@ Ayrıntılı rehber Faz 30'da hazırlanacak. Temel kurallar:
    cPanel'de yoktur) dosyalar indirilemez durumda kalır; ClamAV'lı bir sunucu veya harici
    tarama servisi gerekir (bkz. MIMARI.md §11).
 7. SSL (AutoSSL / Let's Encrypt) etkin olmalı. Ödeme sağlayıcıları webhook'ları
-   yalnızca HTTPS adreslere gönderir.
+   yalnızca HTTPS adreslere gönderir. Production'da oturum çerezi yalnızca HTTPS ile
+   gönderilir ve HSTS başlığı eklenir; site HTTP üzerinden açılırsa giriş yapılamaz.
+   Görseller veya CSS/JS bir CDN'den sunulacaksa `ASSET_URL` girin (CSP'ye otomatik eklenir).
 8. Kurulum sonrası çalıştırılacak komutlar:
    ```bash
    php artisan migrate --force --seed
