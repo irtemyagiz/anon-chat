@@ -21,12 +21,23 @@ class ProductController extends Controller
         ]);
     }
 
-    public function show(Product $product): View
+    public function show(Request $request, Product $product, ProductSearch $search): View
     {
         abort_unless($product->isPublished(), 404);
 
+        /** Görüntülenme oturum başına bir kez sayılır; ürün sahibinin ziyaretleri sayılmaz. */
+        $viewed = $request->session()->get('viewed_products', []);
+
+        if (! in_array($product->id, $viewed, true) && $request->user()?->id !== $product->creator_id) {
+            $product->increment('views_count');
+            $request->session()->put('viewed_products', array_slice([...$viewed, $product->id], -200));
+        }
+
         $product->load(['creator.creatorProfile', 'category.parent', 'images', 'licenses.license', 'tags', 'versions']);
 
-        return view('products.show', ['product' => $product]);
+        return view('products.show', [
+            'product' => $product,
+            'similar' => $search->query(['kategori' => $product->category->slug])->whereKeyNot($product->id)->limit(4)->get(),
+        ]);
     }
 }

@@ -5,6 +5,11 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\Creator\DashboardController as CreatorDashboardController;
+use App\Http\Controllers\Creator\ProductActionController as CreatorProductActionController;
+use App\Http\Controllers\Creator\ProductController as CreatorProductController;
+use App\Http\Controllers\Creator\SalesController as CreatorSalesController;
+use App\Http\Controllers\Creator\StoreSettingsController;
 use App\Http\Controllers\CreatorApplicationController;
 use App\Http\Controllers\DesignerController;
 use App\Http\Controllers\DownloadController;
@@ -61,6 +66,27 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/e-posta-dogrula/tekrar', [EmailVerificationController::class, 'send'])->middleware('throttle:6,1')->name('verification.send');
 
     Route::get('/creator/durum', [CreatorApplicationController::class, 'status'])->name('creator.status');
+
+    /*
+    | Creator paneli: yalnızca onaylı creator'lar
+    */
+    Route::middleware(['verified', 'creator'])->prefix('panel')->name('creator.')->group(function (): void {
+        Route::get('/', CreatorDashboardController::class)->name('dashboard');
+        Route::get('/urunler', [CreatorProductController::class, 'index'])->name('products.index');
+        Route::get('/urunler/yeni', [CreatorProductController::class, 'create'])->name('products.create');
+        Route::post('/urunler', [CreatorProductController::class, 'store'])->middleware('throttle:30,1')->name('products.store');
+        Route::get('/urunler/{product:uuid}', [CreatorProductController::class, 'edit'])->name('products.edit');
+        Route::put('/urunler/{product:uuid}', [CreatorProductController::class, 'update'])->middleware('throttle:60,1')->name('products.update');
+        Route::post('/urunler/{product:uuid}/gonder', [CreatorProductActionController::class, 'submit'])->name('products.submit');
+        Route::post('/urunler/{product:uuid}/yayindan-kaldir', [CreatorProductActionController::class, 'unpublish'])->name('products.unpublish');
+        Route::delete('/urunler/{product:uuid}/dosyalar/{file:uuid}', [CreatorProductActionController::class, 'destroyFile'])->name('products.files.destroy');
+        Route::delete('/urunler/{product:uuid}/gorseller/{image}', [CreatorProductActionController::class, 'destroyImage'])->name('products.images.destroy');
+        Route::delete('/urunler/{product:uuid}/onizleme', [CreatorProductActionController::class, 'destroyPreview'])->name('products.preview.destroy');
+        Route::get('/satislar', [CreatorSalesController::class, 'sales'])->name('sales');
+        Route::get('/gelirler', [CreatorSalesController::class, 'earnings'])->name('earnings');
+        Route::get('/magaza', [StoreSettingsController::class, 'edit'])->name('store.edit');
+        Route::put('/magaza', [StoreSettingsController::class, 'update'])->name('store.update');
+    });
 
     Route::middleware('verified')->group(function (): void {
         Route::get('/cuzdan', WalletController::class)->name('wallet');

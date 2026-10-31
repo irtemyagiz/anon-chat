@@ -97,6 +97,33 @@ return [
         'public_media_disk' => env('PUBLIC_MEDIA_DISK', 'public'),
         'download_link_ttl_minutes' => (int) env('DOWNLOAD_LINK_TTL_MINUTES', 10),
         'max_file_size_mb' => (int) env('MAX_PRODUCT_FILE_MB', 500),
+        'max_preview_size_mb' => (int) env('MAX_PREVIEW_FILE_MB', 30),
+        'max_files_per_product' => (int) env('MAX_FILES_PER_PRODUCT', 20),
+        'max_images_per_product' => (int) env('MAX_IMAGES_PER_PRODUCT', 12),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Zararlı dosya taraması
+    |--------------------------------------------------------------------------
+    |
+    | "clamav": sunucuda ClamAV kurulu olmalıdır (clamdscan veya clamscan).
+    | "none": geliştirme ortamında dosyaları temiz sayar; production'da dosyalar
+    | yönetici incelemesine kadar indirilemez.
+    |
+    */
+
+    'scanner' => [
+        'driver' => env('FILE_SCANNER', 'none'),
+        'clamav_binary' => env('CLAMAV_BINARY', 'clamdscan'),
+    ],
+
+    /*
+    | Yeni ürünler yayına alınmadan önce yönetici onayı gerektirir.
+    */
+
+    'products' => [
+        'require_review' => (bool) env('MARKETPLACE_PRODUCTS_REQUIRE_REVIEW', true),
     ],
 
 ];

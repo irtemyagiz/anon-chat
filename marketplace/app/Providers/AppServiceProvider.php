@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use App\Services\Currency\Providers\ExchangeRateProvider;
 use App\Services\Currency\Providers\FrankfurterProvider;
+use App\Services\Files\Scanners\ClamAvScanner;
+use App\Services\Files\Scanners\FileScanner;
+use App\Services\Files\Scanners\NullScanner;
 use App\Services\Payments\PaymentGatewayManager;
 use App\View\Composers\LayoutComposer;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -21,6 +24,11 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PaymentGatewayManager::class);
+
+        $this->app->bind(FileScanner::class, fn (): FileScanner => match (config('marketplace.scanner.driver')) {
+            'clamav' => new ClamAvScanner(config('marketplace.scanner.clamav_binary')),
+            default => new NullScanner,
+        });
 
         $this->app->bind(ExchangeRateProvider::class, function (): ExchangeRateProvider {
             return match (config('marketplace.exchange_rates.provider')) {

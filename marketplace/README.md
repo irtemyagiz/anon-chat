@@ -41,5 +41,6 @@ php artisan test
 
 Puan dönüşümü, cüzdan defteri, puan yükleme ve webhook güvenliği, döviz kuru,
 satın alma, komisyon, iade, creator hakedişi, ödeme talepleri, kayıt/giriş, creator
-başvurusu, puan yükleme akışı ve güvenli indirme için 95 test bulunur.
+başvurusu, puan yükleme akışı, güvenli indirme, creator paneli ve dosya yükleme güvenliği
+(sahte uzantı, zararlı arşiv, SVG betiği, zararlı dosya taraması) için 110 test bulunur.
 Ayrıca MySQL/MariaDB gerektiren 2 eşzamanlılık testi vardır (`--group=concurrency`).

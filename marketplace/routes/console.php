@@ -1,11 +1,13 @@
 <?php
 
 use App\Enums\CreatorStatus;
+use App\Models\Product;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use App\Services\Currency\ExchangeRateService;
 use App\Services\Earnings\CreatorEarningService;
+use App\Services\Products\ProductManager;
 use App\Services\Settings\SettingsService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -74,3 +76,18 @@ Artisan::command('marketplace:approve-creator {email : Onaylanacak creator başv
 
     return 0;
 })->purpose('Creator başvurusunu onaylar (yönetim paneli tamamlanana kadar)');
+
+Artisan::command('marketplace:approve-product {slug : Onaylanacak ürünün SEO adresi}', function (string $slug, ProductManager $products): int {
+    $product = Product::query()->where('slug', $slug)->first();
+
+    if ($product === null) {
+        $this->error('Ürün bulunamadı.');
+
+        return 1;
+    }
+
+    $products->approve($product);
+    $this->info("{$product->title} yayına alındı.");
+
+    return 0;
+})->purpose('İncelemedeki ürünü yayınlar (yönetim paneli tamamlanana kadar)');

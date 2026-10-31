@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Enums\ProductStatus;
+use App\Policies\ProductPolicy;
 use App\Services\Points\PointConverter;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +28,7 @@ use Illuminate\Support\Str;
     'printer_compatibility', 'print_technology', 'dimension_x_mm', 'dimension_y_mm',
     'dimension_z_mm', 'meta_title', 'meta_description',
 ])]
+#[UsePolicy(ProductPolicy::class)]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -159,6 +162,24 @@ class Product extends Model
     public function pricePoints(): int
     {
         return PointConverter::usdCentsToPoints($this->price_cents);
+    }
+
+    /**
+     * YouTube/Vimeo bağlantısını gizlilik dostu gömme adresine çevirir.
+     */
+    public function videoEmbedUrl(): ?string
+    {
+        $url = (string) $this->preview_video_url;
+
+        if (preg_match('~(?:youtube\.com/(?:watch\?v=|shorts/|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})~', $url, $match)) {
+            return 'https://www.youtube-nocookie.com/embed/'.$match[1];
+        }
+
+        if (preg_match('~vimeo\.com/(?:video/)?(\d+)~', $url, $match)) {
+            return 'https://player.vimeo.com/video/'.$match[1].'?dnt=1';
+        }
+
+        return null;
     }
 
     /**

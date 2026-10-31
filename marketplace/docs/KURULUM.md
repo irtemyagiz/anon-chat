@@ -18,7 +18,17 @@
 >    `C:\php83\php.exe` kullanın (MySQL için XAMPP'ı kullanmaya devam edersiniz).
 > 2. PHP 8.3+ içeren güncel bir XAMPP sürümü kurun.
 
-`php.ini` dosyasında şu eklentilerin başındaki `;` işaretini kaldırın:
+`php.ini` dosyasında (`C:\xampp\php\php.ini`) büyük model dosyaları için yükleme
+sınırlarını artırın ve Apache'yi yeniden başlatın:
+
+```
+upload_max_filesize = 512M
+post_max_size = 520M
+max_file_uploads = 40
+memory_limit = 512M
+```
+
+Aynı dosyada şu eklentilerin başındaki `;` işaretini kaldırın:
 
 ```
 extension=curl
@@ -122,6 +132,11 @@ Tasarımı değiştirecekseniz Node.js 20+ kurup `npm install` ve `npm run build
    ```bash
    php artisan marketplace:approve-creator creator@eposta.com
    ```
+6. Onaylı creator, menüdeki **Tasarım Yükle** ile ürün ekler, **İncelemeye gönder** der.
+   Ürünü yayına almak için:
+   ```bash
+   php artisan marketplace:approve-product urun-seo-adresi
+   ```
 
 > Türkiye'den kayıt olan kullanıcılar TL ile öder. TL fiyat için kur gerekir:
 > `php artisan marketplace:refresh-exchange-rates --force` komutu internetten
@@ -177,12 +192,16 @@ Ayrıntılı rehber Faz 30'da hazırlanacak. Temel kurallar:
    ```
    * * * * * /usr/local/bin/php /home/kullanici/marketplace/artisan schedule:run >> /dev/null 2>&1
    ```
-5. Kuyruk: cPanel'de kalıcı worker çalıştırılamıyorsa her dakika cron ile
+5. Kuyruk: `.env` içinde `QUEUE_CONNECTION=database` yapın. cPanel'de kalıcı worker
+   çalıştırılamıyorsa her dakika cron ile
    `php artisan queue:work --stop-when-empty --max-time=55` çalıştırın. Büyük STL
    işleme için harici kuyruk veya VPS gerekebilir.
-6. SSL (AutoSSL / Let's Encrypt) etkin olmalı. Ödeme sağlayıcıları webhook'ları
+6. Zararlı dosya taraması: `FILE_SCANNER=clamav`. Sunucuda ClamAV yoksa (çoğu paylaşımlı
+   cPanel'de yoktur) dosyalar indirilemez durumda kalır; ClamAV'lı bir sunucu veya harici
+   tarama servisi gerekir (bkz. MIMARI.md §11).
+7. SSL (AutoSSL / Let's Encrypt) etkin olmalı. Ödeme sağlayıcıları webhook'ları
    yalnızca HTTPS adreslere gönderir.
-7. Kurulum sonrası çalıştırılacak komutlar:
+8. Kurulum sonrası çalıştırılacak komutlar:
    ```bash
    php artisan migrate --force --seed
    php artisan storage:link

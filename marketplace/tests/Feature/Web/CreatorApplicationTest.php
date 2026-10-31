@@ -63,6 +63,7 @@ class CreatorApplicationTest extends TestCase
     public function test_upload_link_routes_by_account_state(): void
     {
         $this->get('/tasarim-yukle')->assertRedirect(route('creator.apply'));
-        $this->actingAs(User::factory()->creator()->create())->get('/tasarim-yukle')->assertRedirect(route('creator.status'));
+        $this->actingAs(User::factory()->creator(CreatorStatus::Pending)->create())->get('/tasarim-yukle')->assertRedirect(route('creator.status'));
+        $this->actingAs(User::factory()->creator()->create())->get('/tasarim-yukle')->assertRedirect(route('creator.products.create'));
     }
 }

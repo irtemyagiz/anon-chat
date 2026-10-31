@@ -32,28 +32,87 @@
         @enderror
 
         <div class="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-            {{-- Sol: görseller --}}
-            <div x-data="{ active: 0 }">
-                <div class="card aspect-[4/3] overflow-hidden">
-                    @if ($product->images->isNotEmpty())
-                        @foreach ($product->images as $index => $image)
-                            <img x-show="active === {{ $index }}" src="{{ Storage::disk($image->disk)->url($image->path) }}" alt="{{ $image->alt_text ?? $product->title }}" class="size-full object-contain" @if ($index > 0) loading="lazy" x-cloak @endif>
-                        @endforeach
-                    @elseif ($product->cover_image_path)
-                        <img src="{{ $mediaDisk->url($product->cover_image_path) }}" alt="{{ $product->title }}" class="size-full object-contain">
-                    @else
-                        <div class="layer-lines flex size-full items-center justify-center text-subtle"><x-icon name="cube" class="size-16"/></div>
-                    @endif
-                </div>
-                @if ($product->images->count() > 1)
-                    <div class="mt-3 flex gap-2 overflow-x-auto">
-                        @foreach ($product->images as $index => $image)
-                            <button type="button" @click="active = {{ $index }}" :class="active === {{ $index }} ? 'ring-2 ring-katman-500' : 'opacity-70'" class="size-20 shrink-0 overflow-hidden rounded-xl border border-line">
-                                <img src="{{ Storage::disk($image->disk)->url($image->path) }}" alt="" class="size-full object-cover" loading="lazy">
-                            </button>
-                        @endforeach
+            {{-- Sol: görseller, 3D önizleme, video --}}
+            @php
+                $gallery = $product->images->map(fn ($image) => Storage::disk($image->disk)->url($image->path))
+                    ->whenEmpty(fn ($urls) => $product->cover_image_path ? collect([$mediaDisk->url($product->cover_image_path)]) : $urls)
+                    ->values();
+                $previewUrl = $product->preview_model_path ? $mediaDisk->url($product->preview_model_path) : null;
+                $videoUrl = $product->videoEmbedUrl();
+            @endphp
+            <div x-data="{ tab: 'images', active: 0, zoom: false, images: @js($gallery) }" @keydown.escape.window="zoom = false">
+                @if ($previewUrl || $videoUrl)
+                    <div class="mb-3 inline-flex rounded-xl border border-line bg-surface p-1 text-sm font-medium" role="tablist">
+                        <button type="button" role="tab" @click="tab = 'images'" :class="tab === 'images' ? 'bg-surface-2 text-ink' : 'text-muted'" class="rounded-lg px-3 py-1.5">{{ __('Görseller') }}</button>
+                        @if ($previewUrl)
+                            <button type="button" role="tab" @click="tab = 'model'; $dispatch('open-viewer')" :class="tab === 'model' ? 'bg-surface-2 text-ink' : 'text-muted'" class="flex items-center gap-1.5 rounded-lg px-3 py-1.5"><x-icon name="cube" class="size-4"/>{{ __('3D önizleme') }}</button>
+                        @endif
+                        @if ($videoUrl)
+                            <button type="button" role="tab" @click="tab = 'video'" :class="tab === 'video' ? 'bg-surface-2 text-ink' : 'text-muted'" class="rounded-lg px-3 py-1.5">{{ __('Video') }}</button>
+                        @endif
                     </div>
                 @endif
+
+                <div x-show="tab === 'images'">
+                    <div class="card relative aspect-[4/3] overflow-hidden">
+                        <template x-if="images.length">
+                            <button type="button" @click="zoom = true" class="size-full cursor-zoom-in" aria-label="{{ __('Görseli büyüt') }}">
+                                <img :src="images[active]" alt="{{ $product->title }}" class="size-full object-contain">
+                            </button>
+                        </template>
+                        <template x-if="! images.length">
+                            <div class="layer-lines flex size-full items-center justify-center text-subtle"><x-icon name="cube" class="size-16"/></div>
+                        </template>
+                    </div>
+                    <div x-show="images.length > 1" class="mt-3 flex gap-2 overflow-x-auto">
+                        <template x-for="(src, index) in images" :key="index">
+                            <button type="button" @click="active = index" :class="active === index ? 'ring-2 ring-katman-500' : 'opacity-70'" class="size-20 shrink-0 overflow-hidden rounded-xl border border-line">
+                                <img :src="src" alt="" class="size-full object-cover" loading="lazy">
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                @if ($previewUrl)
+                    <div x-show="tab === 'model'" x-cloak x-data="modelViewer(@js($previewUrl), @js(strtolower(pathinfo($product->preview_model_path, PATHINFO_EXTENSION))))" @open-viewer.window="open()" data-viewer-root class="card relative aspect-[4/3] overflow-hidden bg-surface">
+                        <div x-ref="canvas" class="absolute inset-0 [&_canvas]:size-full"></div>
+                        <div x-show="state === 'loading'" class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-muted">
+                            <x-icon name="cube" class="size-10 animate-pulse"/>
+                            <span>{{ __('Model yükleniyor…') }} <span x-text="progress ? progress + '%' : ''"></span></span>
+                        </div>
+                        <div x-show="state === 'error'" class="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted">{{ __('3D önizleme yüklenemedi. Tarayıcınız WebGL desteklemiyor olabilir.') }}</div>
+                        <div x-show="state === 'ready'" class="absolute inset-x-0 bottom-0 flex flex-wrap justify-center gap-1.5 p-3">
+                            @foreach ([
+                                ['viewer.center()', 'layers', __('Ortala')],
+                                ['viewer.zoom(0.8)', 'search', __('Yakınlaştır')],
+                                ['viewer.zoom(1.25)', 'search', __('Uzaklaştır')],
+                                ['viewer.cycleLighting()', 'sun', __('Işık')],
+                                ['viewer.cycleBackground()', 'moon', __('Arka plan')],
+                                ['viewer.toggleGrid()', 'menu', __('Tabla')],
+                                ['viewer.fullscreen()', 'arrow-right', __('Tam ekran')],
+                            ] as [$action, $icon, $label])
+                                <button type="button" @click="{{ $action }}" class="inline-flex items-center gap-1 rounded-lg bg-surface/90 px-2.5 py-1.5 text-xs font-medium text-ink shadow ring-1 ring-line backdrop-blur hover:bg-surface">{{ $label }}</button>
+                            @endforeach
+                        </div>
+                        <p x-show="state === 'ready'" class="pointer-events-none absolute top-3 left-3 rounded-lg bg-surface/80 px-2 py-1 text-[0.7rem] text-muted backdrop-blur">{{ __('Döndürmek için sürükle · yakınlaştırmak için kaydır') }}</p>
+                    </div>
+                @endif
+
+                @if ($videoUrl)
+                    <div x-show="tab === 'video'" x-cloak class="card aspect-video overflow-hidden">
+                        <template x-if="tab === 'video'">
+                            <iframe src="{{ $videoUrl }}" class="size-full" title="{{ $product->title }}" allow="fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe>
+                        </template>
+                    </div>
+                @endif
+
+                {{-- Tam ekran görsel --}}
+                <div x-show="zoom" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" @click.self="zoom = false" role="dialog" aria-modal="true">
+                    <img :src="images[active]" alt="{{ $product->title }}" class="max-h-full max-w-full object-contain">
+                    <button type="button" @click="zoom = false" class="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20" aria-label="{{ __('Kapat') }}"><x-icon name="x" class="size-6"/></button>
+                    <button type="button" x-show="images.length > 1" @click="active = (active - 1 + images.length) % images.length" class="absolute left-4 rounded-full bg-white/10 px-3 py-2 text-white hover:bg-white/20" aria-label="{{ __('Önceki') }}">‹</button>
+                    <button type="button" x-show="images.length > 1" @click="active = (active + 1) % images.length" class="absolute right-4 rounded-full bg-white/10 px-3 py-2 text-white hover:bg-white/20" aria-label="{{ __('Sonraki') }}">›</button>
+                </div>
             </div>
 
             {{-- Sağ: satın alma --}}
@@ -164,5 +223,23 @@
                 </dl>
             </section>
         </div>
+
+        @if ($product->versions->isNotEmpty())
+            <section class="card mt-8 p-6">
+                <h2 class="text-lg font-bold">{{ __('Güncelleme geçmişi') }}</h2>
+                <ol class="mt-4 space-y-3 text-sm">
+                    @foreach ($product->versions as $version)
+                        <li class="flex gap-4"><span class="w-16 shrink-0 font-semibold">v{{ $version->version }}</span><span class="text-muted">{{ $version->released_at->format('d.m.Y') }}@if ($version->changelog) — {{ $version->changelog }}@endif</span></li>
+                    @endforeach
+                </ol>
+            </section>
+        @endif
+
+        @if ($similar->isNotEmpty())
+            <section class="mt-12">
+                <x-section-heading :title="__('Benzer modeller')" :href="route('categories.show', $product->category)"/>
+                <x-product-grid :products="$similar"/>
+            </section>
+        @endif
     </div>
 </x-layouts.app>

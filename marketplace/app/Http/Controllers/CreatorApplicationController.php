@@ -54,8 +54,12 @@ class CreatorApplicationController extends Controller
      */
     public function upload(Request $request): RedirectResponse
     {
-        return $request->user()?->creatorProfile !== null
-            ? redirect()->route('creator.status')
-            : redirect()->route('creator.apply');
+        $user = $request->user();
+
+        return match (true) {
+            $user?->isApprovedCreator() => redirect()->route('creator.products.create'),
+            $user?->creatorProfile !== null => redirect()->route('creator.status'),
+            default => redirect()->route('creator.apply'),
+        };
     }
 }

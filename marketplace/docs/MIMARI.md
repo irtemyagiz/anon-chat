@@ -185,14 +185,46 @@ anında IP'ye göre değil hesap bilgisine göre fiyatlandırılır.
 
 ## 8. Dosya güvenliği
 
-- Ücretli dosyalar `private` diskinde (`storage/app/private/products`) veya özel
-  bir S3 bucket'ında tutulur. `public_html` altında hiçbir ürün dosyası bulunmaz.
+**Depolama**
+- Ücretli dosyalar `private` diskinde (`storage/app/private/products`) veya özel bir S3
+  bucket'ında, ürün UUID'si altında **rastgele adlarla** tutulur. Orijinal ad yalnızca
+  indirme sırasında gösterilir. `public_html` altında hiçbir ürün dosyası bulunmaz.
 - `ProductFile` modelinde `disk` ve `path` alanları gizlidir (JSON çıktısına girmez).
-- İndirme (Faz 16): oturum → hak kontrolü → dosya aktif ve tarama "clean" mi →
-  kısa süreli imzalı bağlantı (`DOWNLOAD_LINK_TTL_MINUTES`) → `downloads` kaydı.
-- Yükleme (Faz 8): uzantı + MIME + içerik doğrulama, boyut sınırı, arşiv
-  (ZIP/RAR) içerik kontrolü ve zararlı dosya taraması kuyrukta yapılır. Tarama
-  sonucu `clean` olmayan dosya indirilemez.
+- Herkese açık olan yalnızca görseller ve creator'ın ayrıca yüklediği **3D önizleme
+  dosyasıdır**. Satılan dosyalar hiçbir zaman önizleme olarak sunulmaz.
+
+**Yükleme doğrulaması** (`UploadInspector`, HTTP isteği sırasında)
+1. Uzantı, yönetim panelinde aktif olan `file_formats` listesinde olmalı.
+2. Boyut sınırı (`MAX_PRODUCT_FILE_MB`, önizleme için `MAX_PREVIEW_FILE_MB`).
+3. Sunucunun tespit ettiği MIME türü o biçim için izinli olmalı (tarayıcının bildirdiği türe güvenilmez).
+4. İçerik gerçekten o biçimde olmalı: ikili/ASCII STL yapısı, OBJ köşe satırları, `%PDF-`,
+   `ISO-10303-21` (STEP), DXF `SECTION`, RAR imzası, 3MF içinde `3D/3dmodel.model`.
+5. Metin dosyalarında `<?php` ve `<script` reddedilir. SVG'de betik, olay işleyicisi,
+   `foreignObject`, `DOCTYPE/ENTITY` reddedilir.
+6. ZIP/3MF arşivleri: en fazla 2000 giriş, dizin dışına çıkan yollar (`../`, mutlak yol)
+   yasak, şifreli giriş yasak, çalıştırılabilir uzantılar (exe, bat, sh, php, js…) yasak,
+   sıkıştırma oranı 100:1 üzeri reddedilir (sıkıştırma bombası), toplam açılmış boyut ≤ 4 GB.
+7. Bir istekteki dosyalardan biri bile geçersizse hiçbiri kaydedilmez.
+
+**Görseller** (`ImageProcessor`): GD ile yeniden kodlanır. Bu işlem EXIF/konum bilgisini
+siler, görsele gizlenmiş içerikleri temizler, en uzun kenarı 2400 px ile sınırlar ve
+WebP'ye çevirir.
+
+**Zararlı yazılım taraması** (`ScanProductFile` job'u, kuyrukta)
+- `FILE_SCANNER=clamav`: ClamAV (`clamdscan` / `clamscan`). Zararlı bulunan dosya
+  pasifleştirilir, `security_events` ve denetim kaydına yazılır.
+- `FILE_SCANNER=none`: geliştirme ortamında dosyayı temiz sayar. **Production'da dosyalar
+  `pending` kalır ve indirilemez**; tarayıcı yapılandırılmadan satış yapılamaz.
+- Tarama durumu `clean` olmayan dosya indirilemez ve ürün sayfasında "Güvenlik taraması" olarak görünür.
+
+**İndirme**: oturum → aktif satın alma hakkı (veya ürünün sahibi) → dosya aktif ve
+`clean` mi → 10 dakikalık imzalı bağlantı (`DOWNLOAD_LINK_TTL_MINUTES`) → `downloads`
+kaydı → dosya özel diskten akıtılır.
+
+**Ürün yaşam döngüsü**: `draft` → (görsel + dosya + açıklama zorunlu) → `pending_review`
+→ yönetici onayı → `published`. Reddedilen ürün not ile `rejected` olur. Yayından
+kaldırılan ürünü önceden satın alanlar indirmeye devam eder. Onay şimdilik
+`php artisan marketplace:approve-product {slug}` ile yapılır; yönetim paneline taşınacak.
 
 ## 9. Güvenlik özeti
 
@@ -218,16 +250,19 @@ anında IP'ye göre değil hesap bilgisine göre fiyatlandırılır.
 | 5. Tasarım sistemi | ✅ "Katman" kimliği, renk/tipografi tokenları, açık/koyu tema (tercih saklanır), mobil menü |
 | 6. Ana sayfa | ✅ Tüm bölümler, katalog boşken profesyonel boş durum ekranı |
 | 7. Kategoriler | ✅ Liste ve kategori sayfası (alt kategoriler dahil filtreleme) |
-| 9. Ürün detay | 🟡 Temel sayfa: görseller, fiyat (puan + TL/USD), lisans seçimi, satın alma, teknik bilgiler. Yorumlar ve benzer ürünler sonra |
+| 8. Ürün yükleme | ✅ Görseller, indirilebilir dosyalar, 3D önizleme, lisanslar, baskı bilgileri, SEO; doğrulama + tarama; inceleme akışı |
+| 9. Ürün detay | 🟡 Görsel galerisi + tam ekran, 3D önizleme, video, lisans seçimi, satın alma, teknik bilgiler, güncelleme geçmişi, benzer modeller. Yorumlar Faz 22'de |
+| 10. 3D görüntüleyici | ✅ Three.js; STL/OBJ/3MF; döndürme, yakınlaştırma, ışık, arka plan, ortalama, tabla, tam ekran; sekme açılınca tembel yüklenir |
 | 11. Puan cüzdanı | ✅ Servis + cüzdan sayfası (bakiye, toplamlar, işlem geçmişi) |
 | 12. Döviz kuru servisi | ✅ Sağlayıcı, geçmiş, manuel kur, sapma koruması, zamanlayıcı |
 | 13. Puan yükleme | ✅ Paket seçimi → sağlayıcı → imzalı webhook → sonuç sayfası (sandbox ile uçtan uca) |
 | 15. Satın alma | ✅ Onay adımı, yetersiz bakiyede eksik puanla yükleme sayfasına yönlendirme |
 | 16. Güvenli indirme | ✅ Hak kontrolü, 10 dakikalık imzalı bağlantı, tarama durumu kontrolü, indirme kaydı |
-| 18–19. Komisyon, hakediş, ödeme talebi | ✅ Servis katmanı (creator paneli arayüzü sonra) |
+| 17. Creator paneli | 🟡 Genel bakış (8 kart + 30 günlük satış grafiği), ürünlerim, ürün formu, satışlar, gelirler, mağaza ayarları. Yorumlar, takipçiler, kuponlar, bildirimler sonra |
+| 18–19. Komisyon, hakediş, ödeme talebi | ✅ Servis katmanı. Satıcı doğrulama ve ödeme talebi formu sonra |
 | 23. Arama ve filtreleme | 🟡 Metin, kategori, ücretli/ücretsiz, sıralama. Format/lisans/teknoloji filtreleri ve anlık öneriler sonra |
-| 29. Otomatik testler | ✅ 95 test + 2 eşzamanlılık testi |
-| 8, 10, 14, 17, 20–22, 24–28, 30 | ⏳ Sıradaki adımlar: ürün yükleme + 3D görüntüleyici, creator ve admin panelleri, topluluk, bildirimler, SEO, İngilizce çeviriler |
+| 29. Otomatik testler | ✅ 110 test + 2 eşzamanlılık testi |
+| 14, 20–22, 24–28, 30 | ⏳ Sıradaki adımlar: yönetim paneli, topluluk (favori, koleksiyon, takip, yorum), bildirimler, SEO (sitemap), İngilizce çeviriler, gerçek ödeme sağlayıcıları |
 
 ## 11. Karar bekleyen noktalar
 

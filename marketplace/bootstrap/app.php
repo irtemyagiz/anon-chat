@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApplyUserPreferences;
+use App\Http\Middleware\EnsureApprovedCreator;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->preventRequestForgery(except: ['webhooks/*']);
         $middleware->encryptCookies(except: ['theme']);
+        $middleware->alias(['creator' => EnsureApprovedCreator::class]);
         $middleware->web(append: [ApplyUserPreferences::class]);
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('home'));

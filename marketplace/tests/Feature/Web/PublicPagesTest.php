@@ -91,6 +91,29 @@ class PublicPagesTest extends TestCase
         $this->post(route('preferences.update'), ['currency' => 'EUR'])->assertSessionHasErrors('currency');
     }
 
+    public function test_views_are_counted_once_per_session_and_not_for_the_owner(): void
+    {
+        $product = $this->publishedProduct(500);
+
+        $this->get(route('products.show', $product));
+        $this->get(route('products.show', $product));
+        $this->assertSame(1, $product->fresh()->views_count);
+
+        $this->actingAs($product->creator)->get(route('products.show', $product));
+        $this->assertSame(1, $product->fresh()->views_count);
+    }
+
+    public function test_video_links_are_embedded_with_privacy_friendly_hosts(): void
+    {
+        $product = $this->publishedProduct(500);
+
+        $product->forceFill(['preview_video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'])->save();
+        $this->assertSame('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', $product->videoEmbedUrl());
+
+        $product->forceFill(['preview_video_url' => 'https://vimeo.com/76979871'])->save();
+        $this->assertSame('https://player.vimeo.com/video/76979871?dnt=1', $product->videoEmbedUrl());
+    }
+
     public function test_unknown_store_and_unapproved_store_are_not_found(): void
     {
         $pending = User::factory()->creator(CreatorStatus::Pending)->create();

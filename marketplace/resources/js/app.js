@@ -34,6 +34,37 @@ Alpine.store('theme', {
     },
 });
 
+/**
+ * Ürün sayfası 3D önizleme bileşeni. Three.js yalnızca sekme açıldığında yüklenir.
+ */
+Alpine.data('modelViewer', (url, extension) => ({
+    state: 'idle',
+    progress: 0,
+    viewer: null,
+
+    async open() {
+        if (this.state !== 'idle') return;
+        this.state = 'loading';
+
+        try {
+            const { mountViewer } = await import('./viewer.js');
+            this.viewer = mountViewer(this.$refs.canvas, url, extension, {
+                onProgress: (value) => {
+                    this.progress = value;
+                    if (value >= 100) this.state = 'ready';
+                },
+                onError: () => (this.state = 'error'),
+            });
+        } catch (error) {
+            this.state = 'error';
+        }
+    },
+
+    destroy() {
+        this.viewer?.destroy();
+    },
+}));
+
 window.Alpine = Alpine;
 Alpine.start();
 
