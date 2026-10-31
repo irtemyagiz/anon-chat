@@ -301,7 +301,7 @@ derlemesi ve `npm audit`.
 | Faz | Durum |
 |---|---|
 | 1. Proje kurulumu | ✅ Laravel 13, yapılandırma, private disk |
-| 2. Veritabanı mimarisi | ✅ 15 migration, 71 tablo (Laravel sistem tabloları dahil), SQLite ve MariaDB 10.11 üzerinde doğrulandı |
+| 2. Veritabanı mimarisi | ✅ 16 migration, 72 tablo (Laravel sistem tabloları dahil), SQLite ve MariaDB 10.11 üzerinde doğrulandı |
 | 3. Kayıt ve giriş | ✅ Kayıt, giriş (5 hatalı denemede kilit), e-posta doğrulama, şifre sıfırlama, askıya alınmış hesap engeli |
 | 4. Creator hesabı | ✅ Ayrı kayıt sayfası, mevcut hesabı yükseltme, başvuru durumu, yönetim panelinden onay |
 | 5. Tasarım sistemi | ✅ "Katman" kimliği, renk/tipografi tokenları, açık/koyu tema (tercih saklanır), mobil menü |
