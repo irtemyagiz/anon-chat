@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Puan paketi. Başlangıçta bonus puan verilmez (bonus_points = 0); alan
@@ -27,6 +28,14 @@ class PointPackage extends Model
     public function scopeActive(Builder $query): void
     {
         $query->where('is_active', true)->orderBy('sort_order');
+    }
+
+    /**
+     * @return HasMany<PointPurchase, $this>
+     */
+    public function purchases(): HasMany
+    {
+        return $this->hasMany(PointPurchase::class);
     }
 
     public function totalPoints(): int

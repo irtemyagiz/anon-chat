@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use App\Services\Currency\Providers\ExchangeRateProvider;
 use App\Services\Currency\Providers\FrankfurterProvider;
 use App\Services\Files\Scanners\ClamAvScanner;
@@ -12,6 +13,7 @@ use App\View\Composers\LayoutComposer;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -49,6 +51,22 @@ class AppServiceProvider extends ServiceProvider
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
 
         View::composer('components.layouts.app', LayoutComposer::class);
+
+        /*
+         | Yönetici her yetkiye sahiptir. Noktalı yetenekler ("payments.manage") rol
+         | izinlerinden okunur; noktasız olanlar (ör. "update") Policy sınıflarına düşer.
+         */
+        Gate::before(function (User $user, string $ability): ?bool {
+            if (! $user->isActive()) {
+                return false;
+            }
+
+            if ($user->isAdmin()) {
+                return true;
+            }
+
+            return str_contains($ability, '.') ? $user->hasPermission($ability) : null;
+        });
 
         RateLimiter::for('webhooks', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
     }

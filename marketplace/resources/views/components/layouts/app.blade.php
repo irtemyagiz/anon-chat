@@ -72,6 +72,9 @@
                         <div class="my-1 border-t border-line"></div>
                         <a href="{{ route('wallet') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"><x-icon name="wallet" class="size-4"/>{{ __('Cüzdanım') }}</a>
                         <a href="{{ route('top-up.create') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"><x-icon name="coins" class="size-4"/>{{ __('Puan yükle') }}</a>
+                        @can('admin.access')
+                            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"><x-icon name="shield" class="size-4"/>{{ __('Yönetim paneli') }}</a>
+                        @endcan
                         @if (auth()->user()->creatorProfile)
                             <a href="{{ auth()->user()->isApprovedCreator() ? route('creator.dashboard') : route('creator.status') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"><x-icon name="store" class="size-4"/>{{ __('Creator paneli') }}</a>
                         @endif

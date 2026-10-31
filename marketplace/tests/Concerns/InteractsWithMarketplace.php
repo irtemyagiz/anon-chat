@@ -4,6 +4,7 @@ namespace Tests\Concerns;
 
 use App\Enums\SystemWallet;
 use App\Enums\WalletTransactionType;
+use App\Http\Middleware\RequireTwoFactor;
 use App\Models\ExchangeRate;
 use App\Models\PointPurchase;
 use App\Models\Product;
@@ -11,6 +12,7 @@ use App\Models\User;
 use App\Services\Currency\DecimalRate;
 use App\Services\Payments\GatewayEvent;
 use App\Services\Payments\Gateways\SandboxGateway;
+use App\Services\Security\TwoFactorAuthenticator;
 use App\Services\Wallet\WalletService;
 use DateTimeInterface;
 use Illuminate\Support\Str;
@@ -21,6 +23,26 @@ trait InteractsWithMarketplace
     protected function walletService(): WalletService
     {
         return app(WalletService::class);
+    }
+
+    /**
+     * 2FA kurulmuş ve bu oturumda doğrulanmış yönetici (veya verilen kullanıcı) olarak oturum açar.
+     */
+    protected function actingAsAdmin(?User $user = null): User
+    {
+        $user ??= User::factory()->admin()->create();
+        $user->forceFill(['two_factor_secret' => app(TwoFactorAuthenticator::class)->generateSecret(), 'two_factor_confirmed_at' => now()])->save();
+
+        $this->actingAs($user)->withSession([RequireTwoFactor::SESSION_KEY => $user->id]);
+
+        return $user;
+    }
+
+    protected function currentTotp(string $secret): string
+    {
+        $method = new \ReflectionMethod(TwoFactorAuthenticator::class, 'codeAt');
+
+        return $method->invoke(app(TwoFactorAuthenticator::class), $secret, intdiv(time(), 30));
     }
 
     protected function givePoints(User $user, int $points): void

@@ -3,6 +3,8 @@
 namespace App\Services\Accounts;
 
 use App\Enums\CreatorStatus;
+use App\Enums\UserStatus;
+use App\Exceptions\MarketplaceException;
 use App\Models\CreatorProfile;
 use App\Models\Role;
 use App\Models\User;
@@ -78,6 +80,78 @@ class AccountService
 
             return $profile;
         });
+    }
+
+    public function reviewCreator(CreatorProfile $profile, CreatorStatus $status, User $admin, ?string $reason = null): void
+    {
+        $old = $profile->status;
+
+        if ($old === $status) {
+            return;
+        }
+
+        $profile->forceFill([
+            'status' => $status,
+            'approved_at' => $status === CreatorStatus::Approved ? now() : $profile->approved_at,
+            'approved_by' => $status === CreatorStatus::Approved ? $admin->id : $profile->approved_by,
+            'rejection_reason' => in_array($status, [CreatorStatus::Rejected, CreatorStatus::Suspended], true) ? $reason : null,
+        ])->save();
+
+        $this->audit->record('creator.'.$status->value, $profile, ['status' => $old->value], ['status' => $status->value], $admin, array_filter(['reason' => $reason]));
+    }
+
+    /**
+     * Hesabı askıya alır veya yeniden etkinleştirir. Kişi kendi hesabını ve
+     * (yönetici değilse) bir yöneticinin hesabını değiştiremez.
+     */
+    public function setStatus(User $user, UserStatus $status, User $admin, ?string $reason = null): void
+    {
+        if ($user->is($admin)) {
+            throw new MarketplaceException(__('Kendi hesabınızın durumunu değiştiremezsiniz.'));
+        }
+
+        if ($user->isAdmin() && ! $admin->isAdmin()) {
+            throw new MarketplaceException(__('Yönetici hesapları yalnızca yöneticiler tarafından değiştirilebilir.'));
+        }
+
+        $old = $user->status;
+
+        $user->forceFill([
+            'status' => $status,
+            'suspended_at' => $status === UserStatus::Active ? null : now(),
+            'suspension_reason' => $status === UserStatus::Active ? null : $reason,
+        ])->save();
+
+        if ($status !== UserStatus::Active) {
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+        }
+
+        $this->audit->record('user.status_changed', $user, ['status' => $old->value], ['status' => $status->value], $admin, array_filter(['reason' => $reason]));
+    }
+
+    /**
+     * Rolleri günceller. Yalnızca yöneticiler rol değiştirebilir; kimse kendi
+     * yönetici rolünü kaldıramaz (panelde yöneticisiz kalma riskine karşı).
+     *
+     * @param  list<string>  $roleNames
+     */
+    public function syncRoles(User $user, array $roleNames, User $admin): void
+    {
+        if (! $admin->isAdmin()) {
+            throw new MarketplaceException(__('Rolleri yalnızca yöneticiler değiştirebilir.'));
+        }
+
+        if ($user->is($admin) && ! in_array(Role::Admin, $roleNames, true)) {
+            throw new MarketplaceException(__('Kendi yönetici rolünüzü kaldıramazsınız.'));
+        }
+
+        $roleNames = array_values(array_unique([...$roleNames, Role::Customer]));
+        $old = $user->roles->pluck('name')->sort()->values()->all();
+
+        $user->roles()->sync(Role::query()->whereIn('name', $roleNames)->pluck('id')->mapWithKeys(fn (int $id) => [$id => ['assigned_by' => $admin->id, 'created_at' => now()]])->all());
+        $user->unsetRelation('roles');
+
+        $this->audit->record('user.roles_changed', $user, ['roles' => $old], ['roles' => collect($roleNames)->sort()->values()->all()], $admin);
     }
 
     private function uniqueStoreSlug(string $storeName): string

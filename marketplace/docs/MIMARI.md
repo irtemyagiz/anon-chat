@@ -233,7 +233,10 @@ kaldırılan ürünü önceden satın alanlar indirmeye devam eder. Onay şimdil
 | CSRF | Laravel `PreventRequestForgery`. Webhook'lar hariç tutulur, imza ile korunur |
 | Webhook | HMAC imza doğrulama, olay tekilleştirme, tutar/para birimi eşleşmesi |
 | Rate limit | `throttle:webhooks` (dakikada 120/IP). Giriş/indirme için ayrı limitler |
-| Yetki | Rol + izin tabloları, Laravel Policy'leri, admin için 2FA alanları |
+| Yetki | Rol + izin tabloları, Gate (noktalı yetenekler izinlerden), Laravel Policy'leri |
+| Yönetici 2FA | TOTP (RFC 6238, test vektörleriyle doğrulandı), QR ile kurulum, tek kullanımlık kurtarma kodları (özetlenerek saklanır), tekrar oynatma koruması, 5 denemede kilit, başarısız denemeler güvenlik olayı |
+| Yönetici işlemleri | Her POST/PUT/DELETE `admin_logs` tablosuna (şifre/token hariç); kritik işlemler ayrıca `audit_logs` tablosuna eski/yeni değerle |
+| Rol yükseltme | Rolleri yalnızca yönetici değiştirir; kimse kendi yönetici rolünü kaldıramaz veya kendini askıya alamaz; creator rolü yalnızca başvuru onayıyla verilir |
 | Mass assignment | Finansal modeller tamamen korumalıdır (`#[Guarded(['*'])]`), yalnızca servisler yazar |
 | Hassas veri | Şifreli cast (vergi no, kimlik no, IBAN, 2FA secret) |
 | Denetim | Puan düzeltme, kur, komisyon, iade, hakediş ve ayar değişiklikleri `audit_logs` tablosuna |
@@ -260,9 +263,10 @@ kaldırılan ürünü önceden satın alanlar indirmeye devam eder. Onay şimdil
 | 16. Güvenli indirme | ✅ Hak kontrolü, 10 dakikalık imzalı bağlantı, tarama durumu kontrolü, indirme kaydı |
 | 17. Creator paneli | 🟡 Genel bakış (8 kart + 30 günlük satış grafiği), ürünlerim, ürün formu, satışlar, gelirler, mağaza ayarları. Yorumlar, takipçiler, kuponlar, bildirimler sonra |
 | 18–19. Komisyon, hakediş, ödeme talebi | ✅ Servis katmanı. Satıcı doğrulama ve ödeme talebi formu sonra |
+| 25. Yönetim paneli | 🟡 Dashboard (11 metrik + bekleyen işler), creator başvuruları, ürün moderasyonu (onay/ret/yayından kaldırma/öne çıkarma), kullanıcılar (arama, askıya alma, rol, puan düzeltme, işlem ve satın alma geçmişi), puan paketleri + minimum yükleme + ekonomi raporu, ödemeler (iade, sağlayıcılar, webhook kayıtları, itirazlar), döviz kuru (manuel/otomatik/geçmiş/sağlayıcı kayıtları), komisyon (varsayılan + creator/kategori/kampanya kuralları), kategoriler, dosya formatları, loglar. Hakediş yönetimi, içerik/SEO ve sistem ayarları sonra |
 | 23. Arama ve filtreleme | 🟡 Metin, kategori, ücretli/ücretsiz, sıralama. Format/lisans/teknoloji filtreleri ve anlık öneriler sonra |
-| 29. Otomatik testler | ✅ 110 test + 2 eşzamanlılık testi |
-| 14, 20–22, 24–28, 30 | ⏳ Sıradaki adımlar: yönetim paneli, topluluk (favori, koleksiyon, takip, yorum), bildirimler, SEO (sitemap), İngilizce çeviriler, gerçek ödeme sağlayıcıları |
+| 29. Otomatik testler | ✅ 140 test + 2 eşzamanlılık testi |
+| 14, 19 (arayüz), 20–22, 24, 26–28, 30 | ⏳ Sıradaki adımlar: satıcı doğrulama + hakediş talebi/ödeme arayüzü, topluluk (favori, koleksiyon, takip, yorum), bildirimler, SEO (sitemap), İngilizce çeviriler, gerçek ödeme sağlayıcıları |
 
 ## 11. Karar bekleyen noktalar
 

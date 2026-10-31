@@ -1,5 +1,16 @@
 <?php
 
+use App\Http\Controllers\Admin\CatalogSettingsController;
+use App\Http\Controllers\Admin\CommissionController as AdminCommissionController;
+use App\Http\Controllers\Admin\CreatorController as AdminCreatorController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ExchangeRateController as AdminExchangeRateController;
+use App\Http\Controllers\Admin\LogController as AdminLogController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Admin\PointController as AdminPointController;
+use App\Http\Controllers\Admin\ProductModerationController;
+use App\Http\Controllers\Admin\TwoFactorController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -95,6 +106,83 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/puan-yukle/sonuc/{purchase}', [TopUpController::class, 'result'])->name('top-up.result');
         Route::post('/model/{product}/satin-al', [PurchaseController::class, 'store'])->middleware('throttle:20,1')->name('products.purchase');
         Route::get('/indir/{file:uuid}', DownloadController::class)->middleware(['signed', 'throttle:30,1'])->name('downloads.file');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Yönetim paneli: admin.access izni + iki aşamalı doğrulama zorunlu.
+| Her değişiklik isteği admin_logs tablosuna yazılır.
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'verified', 'admin'])->prefix('yonetim')->name('admin.')->group(function (): void {
+    Route::get('/iki-asamali-dogrulama/kurulum', [TwoFactorController::class, 'setup'])->name('two-factor.setup');
+    Route::post('/iki-asamali-dogrulama/kurulum', [TwoFactorController::class, 'confirm'])->middleware('throttle:10,1')->name('two-factor.confirm');
+    Route::get('/iki-asamali-dogrulama', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
+    Route::post('/iki-asamali-dogrulama', [TwoFactorController::class, 'verify'])->middleware('throttle:20,1')->name('two-factor.verify');
+
+    Route::middleware(['admin.2fa', 'admin.log'])->group(function (): void {
+        Route::get('/', AdminDashboardController::class)->name('dashboard');
+
+        Route::middleware('can:creators.manage')->group(function (): void {
+            Route::get('/creatorlar', [AdminCreatorController::class, 'index'])->name('creators.index');
+            Route::put('/creatorlar/{profile:id}', [AdminCreatorController::class, 'update'])->name('creators.update');
+        });
+
+        Route::middleware('can:products.moderate')->group(function (): void {
+            Route::get('/urunler', [ProductModerationController::class, 'index'])->name('products.index');
+            Route::get('/urunler/{product:uuid}', [ProductModerationController::class, 'show'])->name('products.show');
+            Route::post('/urunler/{product:uuid}/karar', [ProductModerationController::class, 'decide'])->name('products.decide');
+            Route::post('/urunler/{product:uuid}/one-cikar', [ProductModerationController::class, 'feature'])->name('products.feature');
+        });
+
+        Route::middleware('can:users.manage')->group(function (): void {
+            Route::get('/kullanicilar', [AdminUserController::class, 'index'])->name('users.index');
+            Route::get('/kullanicilar/{user:uuid}', [AdminUserController::class, 'show'])->name('users.show');
+            Route::put('/kullanicilar/{user:uuid}/durum', [AdminUserController::class, 'updateStatus'])->name('users.status');
+            Route::put('/kullanicilar/{user:uuid}/roller', [AdminUserController::class, 'updateRoles'])->name('users.roles');
+            Route::post('/kullanicilar/{user:uuid}/puan-duzeltme', [AdminUserController::class, 'adjustWallet'])->name('users.adjust');
+        });
+
+        Route::middleware('can:payments.manage')->group(function (): void {
+            Route::get('/puanlar', [AdminPointController::class, 'index'])->name('points.index');
+            Route::put('/puanlar/minimum', [AdminPointController::class, 'updateMinimum'])->name('points.minimum');
+            Route::post('/puanlar/paketler', [AdminPointController::class, 'storePackage'])->name('points.packages.store');
+            Route::put('/puanlar/paketler/{package}', [AdminPointController::class, 'updatePackage'])->name('points.packages.update');
+            Route::delete('/puanlar/paketler/{package}', [AdminPointController::class, 'destroyPackage'])->name('points.packages.destroy');
+            Route::get('/odemeler', [AdminPaymentController::class, 'index'])->name('payments.index');
+            Route::get('/odemeler/webhooklar', [AdminPaymentController::class, 'webhooks'])->name('payments.webhooks');
+            Route::post('/odemeler/{purchase:uuid}/iade', [AdminPaymentController::class, 'refund'])->name('payments.refund');
+            Route::post('/odemeler/saglayicilar/{provider}', [AdminPaymentController::class, 'toggleProvider'])->name('payments.providers.toggle');
+        });
+
+        Route::middleware('can:exchange_rates.manage')->group(function (): void {
+            Route::get('/doviz', [AdminExchangeRateController::class, 'index'])->name('exchange-rates.index');
+            Route::post('/doviz/manuel', [AdminExchangeRateController::class, 'manual'])->name('exchange-rates.manual');
+            Route::post('/doviz/guncelle', [AdminExchangeRateController::class, 'refresh'])->middleware('throttle:6,1')->name('exchange-rates.refresh');
+            Route::post('/doviz/otomatik', [AdminExchangeRateController::class, 'toggleAuto'])->name('exchange-rates.auto');
+        });
+
+        Route::middleware('can:commissions.manage')->group(function (): void {
+            Route::get('/komisyon', [AdminCommissionController::class, 'index'])->name('commissions.index');
+            Route::put('/komisyon/varsayilan', [AdminCommissionController::class, 'updateDefault'])->name('commissions.default');
+            Route::post('/komisyon/kurallar', [AdminCommissionController::class, 'storeRule'])->name('commissions.rules.store');
+            Route::post('/komisyon/kurallar/{rule}', [AdminCommissionController::class, 'toggleRule'])->name('commissions.rules.toggle');
+        });
+
+        Route::middleware('can:categories.manage')->group(function (): void {
+            Route::get('/kategoriler', [CatalogSettingsController::class, 'categories'])->name('categories.index');
+            Route::post('/kategoriler', [CatalogSettingsController::class, 'storeCategory'])->name('categories.store');
+            Route::put('/kategoriler/{category:id}', [CatalogSettingsController::class, 'updateCategory'])->name('categories.update');
+        });
+
+        Route::middleware('can:settings.manage')->group(function (): void {
+            Route::get('/dosya-formatlari', [CatalogSettingsController::class, 'fileFormats'])->name('file-formats.index');
+            Route::post('/dosya-formatlari/{format}', [CatalogSettingsController::class, 'toggleFileFormat'])->name('file-formats.toggle');
+        });
+
+        Route::get('/loglar', AdminLogController::class)->middleware('can:logs.view')->name('logs');
     });
 });
 

@@ -43,8 +43,17 @@
     "file": "assets/plus-jakarta-sans-vietnamese-wght-normal-qRpaaN48.woff2",
     "src": "node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-vietnamese-wght-normal.woff2"
   },
+  "node_modules/qrcode/lib/browser.js": {
+    "file": "assets/browser-CXu5-YaP.js",
+    "name": "browser",
+    "src": "node_modules/qrcode/lib/browser.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
   "resources/css/app.css": {
-    "file": "assets/app-CWM7Kg_p.css",
+    "file": "assets/app-CpqxrR5b.css",
     "name": "app",
     "names": [
       "app.css"
@@ -66,12 +75,13 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-BZnlIXZr.js",
+    "file": "assets/app-BrvzE1Oc.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "dynamicImports": [
-      "resources/js/viewer.js"
+      "resources/js/viewer.js",
+      "node_modules/qrcode/lib/browser.js"
     ]
   },
   "resources/js/viewer.js": {

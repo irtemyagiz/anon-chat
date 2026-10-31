@@ -126,14 +126,19 @@ Tasarımı değiştirecekseniz Node.js 20+ kurup `npm install` ve `npm run build
    ```bash
    php artisan marketplace:make-admin sizin@eposta.com
    ```
+   Menüde **Yönetim paneli** görünür. İlk girişte telefonunuzdaki doğrulama uygulamasıyla
+   (Google/Microsoft Authenticator vb.) QR kodu okutup iki aşamalı doğrulamayı kurmanız
+   istenir. Kurtarma kodlarını saklayın.
 4. Puan yükleme: Cüzdan → Puan yükle → paket seçin → **Sandbox (Test)** → "Ödemeyi başarılı tamamla".
    Gerçek para çekilmez; puanlar imzalı test webhook'u ile yüklenir.
-5. Creator başvurusunu onaylamak için (yönetim paneli tamamlanana kadar):
+5. Creator başvuruları **Yönetim paneli → Creator başvuruları** sayfasından onaylanır.
+6. Onaylı creator, menüdeki **Tasarım Yükle** ile ürün ekler ve **İncelemeye gönder** der.
+   Ürün **Yönetim paneli → Ürün moderasyonu** sayfasından onaylanır.
+
+   Aynı işlemler komut satırından da yapılabilir:
    ```bash
    php artisan marketplace:approve-creator creator@eposta.com
    ```
-6. Onaylı creator, menüdeki **Tasarım Yükle** ile ürün ekler, **İncelemeye gönder** der.
-   Ürünü yayına almak için:
    ```bash
    php artisan marketplace:approve-product urun-seo-adresi
    ```

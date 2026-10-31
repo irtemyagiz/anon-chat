@@ -65,6 +65,16 @@ Alpine.data('modelViewer', (url, extension) => ({
     },
 }));
 
+/**
+ * 2FA kurulumunda otpauth adresini QR koda çevirir (yalnızca o sayfada yüklenir).
+ */
+Alpine.data('qrCode', (text) => ({
+    async init() {
+        const { toCanvas } = await import('qrcode');
+        toCanvas(this.$refs.canvas, text, { width: 200, margin: 1 });
+    },
+}));
+
 window.Alpine = Alpine;
 Alpine.start();
 
