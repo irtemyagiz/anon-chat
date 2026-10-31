@@ -104,10 +104,30 @@ terminalde şunu açık bırakın:
 php artisan schedule:work
 ```
 
-> Şu aşamada kullanıcı arayüzü henüz yok. Ana sayfa Laravel karşılama ekranını
-> gösterir. Tamamlanan bölüm, finansal çekirdek ve veritabanıdır (bkz. MIMARI.md §10).
+Derlenmiş CSS/JS dosyaları (`public/build`) depoda bulunur; **Node.js kurmanız gerekmez.**
+Tasarımı değiştirecekseniz Node.js 20+ kurup `npm install` ve `npm run build` çalıştırın.
 
-### 5. Testler
+### 5. İlk kullanım
+
+1. `http://localhost:8000/kayit` adresinden hesap açın.
+2. Yerel ortamda e-posta gönderilmez (`MAIL_MAILER=log`). Doğrulama sayfasında
+   **"E-postamı doğrula"** bağlantısı görünür; ona tıklayın.
+3. Kendinizi yönetici yapın:
+   ```bash
+   php artisan marketplace:make-admin sizin@eposta.com
+   ```
+4. Puan yükleme: Cüzdan → Puan yükle → paket seçin → **Sandbox (Test)** → "Ödemeyi başarılı tamamla".
+   Gerçek para çekilmez; puanlar imzalı test webhook'u ile yüklenir.
+5. Creator başvurusunu onaylamak için (yönetim paneli tamamlanana kadar):
+   ```bash
+   php artisan marketplace:approve-creator creator@eposta.com
+   ```
+
+> Türkiye'den kayıt olan kullanıcılar TL ile öder. TL fiyat için kur gerekir:
+> `php artisan marketplace:refresh-exchange-rates --force` komutu internetten
+> güncel kuru çeker. Kur alınamazsa TL ile ödeme güvenlik gereği engellenir.
+
+### 6. Testler
 
 ```bash
 php artisan test

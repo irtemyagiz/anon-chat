@@ -38,6 +38,19 @@ class CreatorProfile extends Model
     }
 
     /**
+     * @return HasMany<Product, $this>
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'creator_id', 'user_id');
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'store_slug';
+    }
+
+    /**
      * @return HasMany<CreatorVerification, $this>
      */
     public function verifications(): HasMany

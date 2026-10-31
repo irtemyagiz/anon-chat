@@ -1,9 +1,150 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/plus-jakarta-sans';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../views';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ | Katman tasarım sistemi
+ | Marka rengi "katman" (deniz yeşili), vurgu rengi "filament" (amber).
+ | Yüzey ve metin renkleri anlamsal değişkenlerdir; koyu temada yeniden tanımlanır.
+ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Plus Jakarta Sans Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+    --color-katman-50: #effcf9;
+    --color-katman-100: #c9f6ec;
+    --color-katman-200: #94ecda;
+    --color-katman-300: #57dbc4;
+    --color-katman-400: #27c1aa;
+    --color-katman-500: #0fa592;
+    --color-katman-600: #0a8577;
+    --color-katman-700: #0d6a61;
+    --color-katman-800: #10554f;
+    --color-katman-900: #124743;
+    --color-katman-950: #032a28;
+
+    --color-filament-300: #fcd34d;
+    --color-filament-400: #fbbf24;
+    --color-filament-500: #f59e0b;
+    --color-filament-600: #d97706;
+
+    --radius-card: 1.25rem;
+    --shadow-card: 0 1px 2px rgb(16 24 22 / 0.04), 0 8px 24px -12px rgb(16 24 22 / 0.12);
+}
+
+@theme inline {
+    --color-canvas: var(--canvas);
+    --color-surface: var(--surface);
+    --color-surface-2: var(--surface-2);
+    --color-line: var(--line);
+    --color-ink: var(--ink);
+    --color-muted: var(--muted);
+    --color-subtle: var(--subtle);
+}
+
+:root {
+    --canvas: #f6f7f5;
+    --surface: #ffffff;
+    --surface-2: #eef1ee;
+    --line: #e1e6e2;
+    --ink: #111816;
+    --muted: #55625e;
+    --subtle: #8a9692;
+    color-scheme: light;
+}
+
+.dark {
+    --canvas: #0a0e0d;
+    --surface: #121816;
+    --surface-2: #1a2220;
+    --line: #26302d;
+    --ink: #eef3f1;
+    --muted: #a3b0ac;
+    --subtle: #6f7c78;
+    color-scheme: dark;
+}
+
+@layer base {
+    html {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        @apply bg-canvas text-ink font-sans antialiased;
+    }
+
+    h1, h2, h3, h4 {
+        @apply font-display tracking-tight;
+    }
+
+    :focus-visible {
+        @apply outline-2 outline-offset-2 outline-katman-500;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@utility container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+@utility card {
+    @apply rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-card)];
+}
+
+@utility btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition
+        disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+@utility btn-primary {
+    @apply btn bg-katman-600 text-white hover:bg-katman-700 dark:bg-katman-500 dark:text-katman-950 dark:hover:bg-katman-400;
+}
+
+@utility btn-accent {
+    @apply btn bg-filament-400 text-katman-950 hover:bg-filament-300;
+}
+
+@utility btn-secondary {
+    @apply btn border border-line bg-surface text-ink hover:bg-surface-2;
+}
+
+@utility btn-ghost {
+    @apply btn text-muted hover:bg-surface-2 hover:text-ink;
+}
+
+@utility input {
+    @apply block w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-subtle
+        focus:border-katman-500 focus:ring-2 focus:ring-katman-500/25 focus:outline-none;
+}
+
+@utility label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+}
+
+@utility chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-muted;
+}
+
+@utility eyebrow {
+    @apply text-xs font-semibold tracking-[0.14em] text-katman-700 uppercase dark:text-katman-300;
+}
+
+/* İmza deseni: üst üste binen ince "katman" çizgileri */
+@utility layer-lines {
+    background-image: repeating-linear-gradient(
+        180deg,
+        transparent 0,
+        transparent 7px,
+        color-mix(in oklab, var(--color-katman-500) 14%, transparent) 7px,
+        color-mix(in oklab, var(--color-katman-500) 14%, transparent) 8px
+    );
 }

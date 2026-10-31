@@ -213,20 +213,25 @@ anında IP'ye göre değil hesap bilgisine göre fiyatlandırılır.
 |---|---|
 | 1. Proje kurulumu | ✅ Laravel 13, yapılandırma, private disk |
 | 2. Veritabanı mimarisi | ✅ 11 migration, 70 tablo (Laravel sistem tabloları dahil), SQLite ve MariaDB 10.11 üzerinde doğrulandı |
-| 11. Puan cüzdanı (servis) | ✅ Çift taraflı defter, kilit, idempotency, ters kayıt |
+| 3. Kayıt ve giriş | ✅ Kayıt, giriş (5 hatalı denemede kilit), e-posta doğrulama, şifre sıfırlama, askıya alınmış hesap engeli |
+| 4. Creator hesabı | ✅ Ayrı kayıt sayfası, mevcut hesabı yükseltme, başvuru durumu (onay: şimdilik konsol komutu) |
+| 5. Tasarım sistemi | ✅ "Katman" kimliği, renk/tipografi tokenları, açık/koyu tema (tercih saklanır), mobil menü |
+| 6. Ana sayfa | ✅ Tüm bölümler, katalog boşken profesyonel boş durum ekranı |
+| 7. Kategoriler | ✅ Liste ve kategori sayfası (alt kategoriler dahil filtreleme) |
+| 9. Ürün detay | 🟡 Temel sayfa: görseller, fiyat (puan + TL/USD), lisans seçimi, satın alma, teknik bilgiler. Yorumlar ve benzer ürünler sonra |
+| 11. Puan cüzdanı | ✅ Servis + cüzdan sayfası (bakiye, toplamlar, işlem geçmişi) |
 | 12. Döviz kuru servisi | ✅ Sağlayıcı, geçmiş, manuel kur, sapma koruması, zamanlayıcı |
-| 13. Puan yükleme (servis + webhook) | ✅ Sandbox sağlayıcısıyla uçtan uca |
-| 15. Satın alma (servis) | ✅ |
-| 18–19. Komisyon, hakediş, ödeme talebi (servis) | ✅ |
-| 29. Otomatik testler (finansal çekirdek) | ✅ 58 test + 2 eşzamanlılık testi |
-| 3–10, 14, 16–17, 20–28, 30 | ⏳ Sıradaki adımlar (arayüz, kimlik doğrulama, paneller…) |
-
-Servis katmanı tamamlanan fazların **kullanıcı arayüzü henüz yoktur**. Arayüz
-fazlarında controller'lar doğrudan bu servisleri çağıracaktır.
+| 13. Puan yükleme | ✅ Paket seçimi → sağlayıcı → imzalı webhook → sonuç sayfası (sandbox ile uçtan uca) |
+| 15. Satın alma | ✅ Onay adımı, yetersiz bakiyede eksik puanla yükleme sayfasına yönlendirme |
+| 16. Güvenli indirme | ✅ Hak kontrolü, 10 dakikalık imzalı bağlantı, tarama durumu kontrolü, indirme kaydı |
+| 18–19. Komisyon, hakediş, ödeme talebi | ✅ Servis katmanı (creator paneli arayüzü sonra) |
+| 23. Arama ve filtreleme | 🟡 Metin, kategori, ücretli/ücretsiz, sıralama. Format/lisans/teknoloji filtreleri ve anlık öneriler sonra |
+| 29. Otomatik testler | ✅ 95 test + 2 eşzamanlılık testi |
+| 8, 10, 14, 17, 20–22, 24–28, 30 | ⏳ Sıradaki adımlar: ürün yükleme + 3D görüntüleyici, creator ve admin panelleri, topluluk, bildirimler, SEO, İngilizce çeviriler |
 
 ## 11. Karar bekleyen noktalar
 
-1. **Marka adı ve logo:** `.env` içinde geçici olarak `APP_NAME="3D Marketplace"` kullanılıyor.
+1. **Marka adı ve logo:** "Katman" seçildi. Marka tescili ve alan adı uygunluğu henüz kontrol edilmedi.
 2. **Hukuki uygunluk (puan sistemi):** Puanların ödeme hizmetleri / elektronik para
    mevzuatı, tüketici hakları (cayma hakkı, kullanılmamış puan iadesi) ve vergi
    açısından durumu üretim öncesinde bir uzmana sorulmalı. Kod, puan transferini ve

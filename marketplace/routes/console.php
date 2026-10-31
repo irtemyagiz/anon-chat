@@ -1,10 +1,15 @@
 <?php
 
+use App\Enums\CreatorStatus;
+use App\Models\Role;
+use App\Models\User;
+use App\Services\Audit\AuditLogger;
 use App\Services\Currency\ExchangeRateService;
 use App\Services\Earnings\CreatorEarningService;
 use App\Services\Settings\SettingsService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Str;
 
 Artisan::command('marketplace:refresh-exchange-rates {--force : Otomatik güncelleme kapalı olsa da çalıştır}', function (ExchangeRateService $rates, SettingsService $settings): int {
     if (! $this->option('force') && ! $settings->boolean('exchange_rates.auto_update', true)) {
@@ -37,3 +42,35 @@ Schedule::command('marketplace:refresh-exchange-rates')
     ->withoutOverlapping();
 
 Schedule::command('marketplace:release-earnings')->hourly()->withoutOverlapping();
+
+Artisan::command('marketplace:make-admin {email : Yönetici yapılacak kullanıcının e-posta adresi}', function (string $email): int {
+    $user = User::query()->where('email', Str::lower($email))->first();
+
+    if ($user === null) {
+        $this->error('Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı.');
+
+        return 1;
+    }
+
+    $user->roles()->syncWithoutDetaching([Role::query()->where('name', Role::Admin)->value('id')]);
+    app(AuditLogger::class)->record('user.role_granted', $user, null, ['role' => Role::Admin], context: ['via' => 'console']);
+    $this->info("{$user->email} artık yönetici.");
+
+    return 0;
+})->purpose('Mevcut bir kullanıcıya yönetici rolü verir');
+
+Artisan::command('marketplace:approve-creator {email : Onaylanacak creator başvurusunun e-posta adresi}', function (string $email): int {
+    $profile = User::query()->where('email', Str::lower($email))->first()?->creatorProfile;
+
+    if ($profile === null) {
+        $this->error('Bu kullanıcının creator başvurusu yok.');
+
+        return 1;
+    }
+
+    $profile->forceFill(['status' => CreatorStatus::Approved, 'approved_at' => now()])->save();
+    app(AuditLogger::class)->record('creator.approved', $profile, null, ['status' => 'approved'], context: ['via' => 'console']);
+    $this->info("{$profile->store_name} mağazası onaylandı.");
+
+    return 0;
+})->purpose('Creator başvurusunu onaylar (yönetim paneli tamamlanana kadar)');

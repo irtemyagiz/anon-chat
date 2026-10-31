@@ -12,4 +12,11 @@ abstract class TestCase extends BaseTestCase
      * temel sınıfta tutulur.
      */
     protected bool $seed = true;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+    }
 }

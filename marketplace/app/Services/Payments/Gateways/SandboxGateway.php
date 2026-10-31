@@ -41,7 +41,7 @@ class SandboxGateway implements PaymentGateway
     public function createCheckout(PointPurchase $purchase): CheckoutSession
     {
         return new CheckoutSession(
-            redirectUrl: url('/payments/sandbox/'.$purchase->uuid),
+            redirectUrl: route('sandbox.checkout', $purchase),
             providerReference: 'sbx_'.Str::lower(Str::random(24)),
         );
     }

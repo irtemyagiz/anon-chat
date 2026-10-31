@@ -1,9 +1,9 @@
-# 3D Dijital Tasarım Pazaryeri
+# Katman — 3D Dijital Tasarım Pazaryeri
 
 Creator ekonomisi ve puan cüzdanı tabanlı, çoklu satıcılı 3D dijital tasarım pazaryeri.
 Laravel 13 · PHP 8.3+ · MySQL 8 / MariaDB · Blade + Tailwind + Alpine.js + Three.js.
 
-> Geçici çalışma adı "3D Marketplace". Marka adı ve logo henüz belirlenmedi.
+> Marka: **Katman** — 3D baskının katman katman oluşumundan. Logo: kaydırılmış üç katman.
 
 ## Temel kurallar
 
@@ -40,5 +40,6 @@ php artisan test
 ```
 
 Puan dönüşümü, cüzdan defteri, puan yükleme ve webhook güvenliği, döviz kuru,
-satın alma, komisyon, iade, creator hakedişi ve ödeme talepleri için 58 test bulunur.
+satın alma, komisyon, iade, creator hakedişi, ödeme talepleri, kayıt/giriş, creator
+başvurusu, puan yükleme akışı ve güvenli indirme için 95 test bulunur.
 Ayrıca MySQL/MariaDB gerektiren 2 eşzamanlılık testi vardır (`--group=concurrency`).
