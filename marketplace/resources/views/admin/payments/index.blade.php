@@ -7,9 +7,15 @@
                 <div class="rounded-xl border border-line p-4">
                     <div class="flex items-center justify-between"><span class="font-semibold">{{ $provider->name }}</span><x-status-badge :status="$provider->is_enabled ? 'completed' : 'unpublished'"/></div>
                     <p class="mt-1 text-xs text-muted">{{ implode(', ', $provider->supported_currencies) }} · {{ $provider->mode }}</p>
-                    @unless (config("marketplace.payments.gateways.{$provider->code}"))
+                    @php $gatewayManager = app(\App\Services\Payments\PaymentGatewayManager::class); @endphp
+                    @if (! config("marketplace.payments.gateways.{$provider->code}"))
                         <p class="mt-1 text-xs text-subtle">{{ __('Entegrasyon henüz kurulmadı') }}</p>
-                    @endunless
+                    @elseif (! $gatewayManager->isConfigured($provider->code))
+                        <p class="mt-1 text-xs text-amber-700 dark:text-filament-300">{{ __('.env dosyasında eksik: :vars', ['vars' => implode(', ', $gatewayManager->missingSettings($provider->code))]) }}</p>
+                    @endif
+                    @if ($provider->code !== 'sandbox')
+                        <p class="mt-1 font-mono text-[0.65rem] break-all text-subtle">{{ __('Bildirim adresi') }}: {{ route('webhooks.payments', $provider->code) }}</p>
+                    @endif
                     <form method="POST" action="{{ route('admin.payments.providers.toggle', $provider) }}" class="mt-3">@csrf<button class="btn-secondary w-full px-3 py-1.5 text-xs">{{ $provider->is_enabled ? __('Kapat') : __('Aç') }}</button></form>
                 </div>
             @endforeach

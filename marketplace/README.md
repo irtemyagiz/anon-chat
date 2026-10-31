@@ -22,6 +22,9 @@ Laravel 13 · PHP 8.3+ · MySQL 8 / MariaDB · Blade + Tailwind + Alpine.js + Th
 | [docs/MIMARI.md](docs/MIMARI.md) | Mimari, puan defteri, ödeme/satın alma/hakediş akışları, güvenlik, faz durumu, karar bekleyen noktalar |
 | [docs/VERITABANI.md](docs/VERITABANI.md) | Tablo tablo veritabanı şeması ve kısıtlar |
 | [docs/KURULUM.md](docs/KURULUM.md) | XAMPP (Windows) yerel kurulum, Apache sanal sunucu, cPanel özeti |
+| [docs/API.md](docs/API.md) | REST API v1: kimlik doğrulama, uçlar, örnekler, hata kodları |
+| [docs/KULLANICI_KILAVUZU.md](docs/KULLANICI_KILAVUZU.md) | Alıcı ve tasarımcı kullanım kılavuzu |
+| [docs/YONETICI_KILAVUZU.md](docs/YONETICI_KILAVUZU.md) | Yönetim paneli kılavuzu |
 
 ## Hızlı başlangıç
 
@@ -46,6 +49,7 @@ başvurusu, puan yükleme akışı, güvenli indirme, creator paneli ve dosya y�
 2FA, rol yükseltme koruması, hakediş akışı (IBAN/TCKN doğrulaması) ve topluluk özellikleri
 (değerlendirme, yorum spam koruması, koleksiyon gizliliği), bildirimler, içerik ve destek,
 SEO ve çeviri kapsamı, arama ve filtreler, kuponlar, creator istatistikleri, parçalı
-yükleme, otomatik önizleme, güvenlik başlıkları ve ana sayfa önbelleği için 218 test bulunur.
+yükleme, otomatik önizleme, güvenlik başlıkları, ana sayfa önbelleği, ödeme sağlayıcı
+adaptörleri (iyzico, PayTR, Stripe) ve REST API için 229 test bulunur.
 Her değişiklikte GitHub Actions bu testleri SQLite ve MariaDB üzerinde çalıştırır.
 Ayrıca MySQL/MariaDB gerektiren 2 eşzamanlılık testi vardır (`--group=concurrency`).

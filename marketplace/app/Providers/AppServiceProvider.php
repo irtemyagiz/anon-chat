@@ -86,5 +86,6 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         RateLimiter::for('webhooks', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ? 'api-user:'.$request->user()->id : 'api-ip:'.$request->ip()));
     }
 }

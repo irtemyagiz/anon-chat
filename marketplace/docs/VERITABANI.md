@@ -93,6 +93,12 @@ ve MariaDB 10.11 üzerinde çalıştırılmıştır. Migration dosyaları:
 satın alma rozeti, creator yanıtı), `comments` (iç içe yanıt, moderasyon durumu),
 `notifications` (Laravel bildirimleri).
 
+## API
+
+`personal_access_tokens` (Laravel Sanctum): REST API belirteçleri. Belirteç özeti (SHA-256)
+saklanır, düz metin yalnızca oluşturulduğu anda bir kez gösterilir. `expires_at` varsayılan
+30 gün; hesap askıya alınınca veya silinince kullanıcının tüm belirteçleri silinir.
+
 ## Yönetim
 
 `system_settings` (grup/anahtar/değer, isteğe bağlı şifreli), `audit_logs`

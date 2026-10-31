@@ -11,6 +11,7 @@ use App\Models\PaymentProvider;
 use App\Models\PaymentWebhookEvent;
 use App\Models\PointPurchase;
 use App\Services\Audit\AuditLogger;
+use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Payments\PointTopUpService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,10 +64,10 @@ class PaymentController extends Controller
     /**
      * Sağlayıcıyı açıp kapatır. Kod tarafında adaptörü olmayan sağlayıcı açılamaz.
      */
-    public function toggleProvider(Request $request, PaymentProvider $provider, AuditLogger $audit): RedirectResponse
+    public function toggleProvider(Request $request, PaymentProvider $provider, AuditLogger $audit, PaymentGatewayManager $gateways): RedirectResponse
     {
-        if (! $provider->is_enabled && config("marketplace.payments.gateways.{$provider->code}") === null) {
-            return back()->withErrors(['provider' => __(':name entegrasyonu henüz kurulmadı; API anahtarları ve sözleşme tamamlandıktan sonra etkinleştirilebilir.', ['name' => $provider->name])]);
+        if (! $provider->is_enabled && ! $gateways->isConfigured($provider->code)) {
+            return back()->withErrors(['provider' => __(':name için API anahtarları girilmedi (:vars); sözleşme ve anahtarlar tamamlandıktan sonra etkinleştirilebilir.', ['name' => $provider->name, 'vars' => implode(', ', $gateways->missingSettings($provider->code)) ?: '-'])]);
         }
 
         if (! $provider->is_enabled && $provider->code === 'sandbox' && app()->isProduction()) {

@@ -120,10 +120,23 @@ olarak geri alır.
 2. `payment_providers.is_enabled = true` olmalı (yönetim paneli),
 3. API anahtarları `.env` içinde olmalı.
 
-Şu anda yalnızca **SandboxGateway** vardır (gerçek para yok; production'da çalışmaz).
-iyzico, PayTR ve Stripe kayıtları **kapalı** olarak eklenmiştir. Bunların adaptörleri,
-ticari hesap ve API erişimi sağlandıktan sonra sağlayıcıların resmî sandbox
-ortamlarıyla yazılacaktır.
+Adaptörler (`app/Services/Payments/Gateways`):
+
+| Sağlayıcı | Ödeme | Bildirimin doğrulanması | İade |
+|---|---|---|---|
+| **Sandbox** | Site içi test sayfası (gerçek para yok, production'da çalışmaz) | HMAC-SHA256, `X-Sandbox-Signature` | Yerel |
+| **iyzico** | Ödeme Formu (Checkout Form), `paymentPageUrl` yönlendirmesi; `IYZWSv2` imzalı istekler | Gelen istekteki `token` ile ödeme sonucu iyzico'dan kimlik doğrulamalı olarak **yeniden sorgulanır**; istek içeriğine güvenilmez. Tarayıcı dönüşü ve sunucu bildirimi aynı olay kimliğiyle tekilleşir | `POST /payment/refund` |
+| **PayTR** | iFrame API: token alınır, ödeme formu site içinde iframe ile açılır | `hash = base64(HMAC-SHA256(merchant_oid + salt + status + total_amount))`, yanıt düz metin `OK` | `POST /odeme/iade` |
+| **Stripe** | Checkout Session yönlendirmesi, `Idempotency-Key` | `Stripe-Signature` (t + v1), 5 dakika zaman toleransı; itiraz olayı ödeme kaydından eşleştirilir | `POST /v1/refunds` |
+
+Adaptörler sağlayıcıların belgelenmiş API biçimlerine göre yazıldı ve `Http::fake` ile
+gerçek imza hesaplarıyla test edildi (`tests/Feature/PaymentGatewaysTest.php`). **Canlı veya
+sağlayıcı sandbox hesabıyla henüz denenmedi**; ticari hesap açıldıktan sonra her sağlayıcının
+kendi test ortamında uçtan uca deneme yapılmalıdır. Anahtarlar girilmeden sağlayıcı panelden
+açılamaz ve webhook adresi 404 döner.
+
+Webhook yanıtı sağlayıcıya göre değişir (`RespondsToWebhook`): PayTR düz metin `OK` ister,
+iyzico'da kullanıcının tarayıcısı sonuç sayfasına yönlendirilir.
 
 ## 5. Satın alma akışı
 
@@ -311,11 +324,14 @@ derlemesi ve `npm audit`.
 | 23. Arama ve filtreleme | ✅ Metin, kategori, etiket, ücretli/ücretsiz, dosya formatı, ticari lisans, baskı teknolojisi, USD fiyat aralığı; 8 sıralama; başlıkta yazarken ürün/tasarımcı/kategori/etiket önerileri (klavyeyle gezinme) |
 | 27. Güvenlik sertleştirme | ✅ Nonce'lu CSP, HSTS, çerçeveleme/MIME/referrer/izin başlıkları, güvenli oturum çerezi, bağımlılık denetimi (bkz. §9) |
 | 28. Performans | ✅ Görsel küçük boyutları + srcset + lazy loading, ana sayfa önbelleği (anında temizlenir), tembel yüklenen 3D/QR kütüphaneleri, CDN desteği |
-| 29. Otomatik testler ve CI | ✅ 218 test + 2 eşzamanlılık testi (SQLite ve MariaDB); GitHub Actions iş akışı |
+| 29. Otomatik testler ve CI | ✅ 229 test + 2 eşzamanlılık testi (SQLite ve MariaDB); GitHub Actions iş akışı |
 | 24. Bildirimler | ✅ 17 tür; site içi + kategori bazlı e-posta tercihi; yönetici uyarıları izne göre |
 | 26. SEO ve çok dillilik | ✅ Sitemap (bölümlü), robots.txt, JSON-LD (Product, BreadcrumbList, WebSite+SearchAction, Organization, ProfilePage), og:image, hreflang + ?lang=en, sayfa bazında meta ayarları; Türkçe/İngilizce arayüz (yönetim paneli Türkçe), çeviri kapsamı testi |
 | — İçerik, destek, KVKK | ✅ Sayfa/blog/SSS/banner yönetimi, yasal metin taslakları (TR+EN, hukuki inceleme gerekli), sistem/SMTP/bakım modu ayarları, destek talepleri ve puan iadesi talebi, hesap silme (anonimleştirme) |
-| 14, 30 | ⏳ Sıradaki adımlar: gerçek ödeme sağlayıcı adaptörleri ve REST API, cPanel dağıtım rehberi |
+| 14. Ödeme sağlayıcı entegrasyonları | ✅ iyzico (Ödeme Formu), PayTR (iFrame), Stripe (Checkout) adaptörleri: ödeme başlatma, bildirim doğrulama, iade, itiraz; anahtarlar girilene kadar kapalı (bkz. §4). Canlı hesapla deneme ticari hesap açıldıktan sonra yapılacak |
+| — REST API | ✅ `/api/v1`: katalog, tasarımcı, kur, belirteçle oturum, profil, cüzdan, kütüphane, imzalı indirme bağlantısı, idempotent satın alma ([API.md](API.md)) |
+| — Kılavuzlar | ✅ [Kullanıcı](KULLANICI_KILAVUZU.md) ve [yönetici](YONETICI_KILAVUZU.md) kılavuzları |
+| 30. cPanel dağıtımı | ⏳ Ayrıntılı dağıtım rehberi (KURULUM.md §C şu an özet) |
 
 ## 11. Karar bekleyen noktalar
 
@@ -333,3 +349,9 @@ derlemesi ve `npm audit`.
    Payoneer) netleştirilmeli.
 5. **Zararlı dosya taraması:** cPanel'de ClamAV çoğu zaman yoktur. Harici tarama API'si
    (ör. VirusTotal, Cloudmersive) veya ClamAV'lı ayrı bir sunucu seçilmeli.
+6. **Ödeme sağlayıcılarına gönderilen alıcı bilgileri:** iyzico ve PayTR, dijital ürünlerde de
+   adres, şehir, telefon ve (iyzico) T.C. kimlik no ister. Platform bu bilgileri kullanıcıdan
+   toplamadığı için `.env` içindeki `PAYMENT_BUYER_*` değerleri gönderilir (varsayılanlar:
+   "Dijital teslimat - fiziksel gönderim yok", İstanbul, `05000000000`, `11111111111`). Bu
+   uygulama sağlayıcıyla sözleşme sırasında onaylatılmalı; sağlayıcı gerçek bilgi isterse
+   ödeme sayfasından önce kullanıcıdan fatura bilgisi toplayan bir adım eklenmelidir.

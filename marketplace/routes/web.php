@@ -195,6 +195,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/puan-yukle', [TopUpController::class, 'create'])->name('top-up.create');
         Route::post('/puan-yukle', [TopUpController::class, 'store'])->middleware('throttle:10,1')->name('top-up.store');
         Route::get('/puan-yukle/sonuc/{purchase}', [TopUpController::class, 'result'])->name('top-up.result');
+        Route::get('/puan-yukle/paytr/{purchase}', [TopUpController::class, 'paytr'])->name('top-up.paytr');
         Route::post('/model/{product}/satin-al', [PurchaseController::class, 'store'])->middleware('throttle:20,1')->name('products.purchase');
         Route::post('/model/{product}/kupon', [PurchaseController::class, 'previewCoupon'])->middleware('throttle:20,1')->name('products.coupon');
         Route::get('/indir/{file:uuid}', DownloadController::class)->middleware(['signed', 'throttle:30,1'])->name('downloads.file');

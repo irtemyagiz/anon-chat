@@ -43,4 +43,12 @@ class PurchaseEntitlement extends Model
     {
         return $this->revoked_at === null;
     }
+
+    /**
+     * @return BelongsTo<License, $this>
+     */
+    public function license(): BelongsTo
+    {
+        return $this->belongsTo(License::class);
+    }
 }

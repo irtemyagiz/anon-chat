@@ -131,6 +131,7 @@ class AccountService
 
         if ($status !== UserStatus::Active) {
             DB::table('sessions')->where('user_id', $user->id)->delete();
+            $user->tokens()->delete();
         }
 
         $this->audit->record('user.status_changed', $user, ['status' => $old->value], ['status' => $status->value], $admin, array_filter(['reason' => $reason]));

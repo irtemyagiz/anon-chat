@@ -1,6 +1,9 @@
 <?php
 
+use App\Services\Payments\Gateways\IyzicoGateway;
+use App\Services\Payments\Gateways\PaytrGateway;
 use App\Services\Payments\Gateways\SandboxGateway;
+use App\Services\Payments\Gateways\StripeGateway;
 
 return [
 
@@ -101,11 +104,49 @@ return [
     */
 
     'payments' => [
+        /*
+         * Gerçek sağlayıcılar, anahtarları .env dosyasına girilene kadar kullanılamaz ve
+         * yönetim panelinden açılamaz. "env": panelde eksik gösterilecek değişkenler.
+         */
         'gateways' => [
             'sandbox' => [
                 'class' => SandboxGateway::class,
                 'secret' => env('SANDBOX_PAYMENT_SECRET'),
+                'env' => ['secret' => 'SANDBOX_PAYMENT_SECRET'],
             ],
+            'iyzico' => [
+                'class' => IyzicoGateway::class,
+                'api_key' => env('IYZICO_API_KEY'),
+                'secret_key' => env('IYZICO_SECRET_KEY'),
+                'base_url' => env('IYZICO_BASE_URL', 'https://sandbox-api.iyzipay.com'),
+                'env' => ['api_key' => 'IYZICO_API_KEY', 'secret_key' => 'IYZICO_SECRET_KEY'],
+            ],
+            'paytr' => [
+                'class' => PaytrGateway::class,
+                'merchant_id' => env('PAYTR_MERCHANT_ID'),
+                'merchant_key' => env('PAYTR_MERCHANT_KEY'),
+                'merchant_salt' => env('PAYTR_MERCHANT_SALT'),
+                'test_mode' => (bool) env('PAYTR_TEST_MODE', true),
+                'env' => ['merchant_id' => 'PAYTR_MERCHANT_ID', 'merchant_key' => 'PAYTR_MERCHANT_KEY', 'merchant_salt' => 'PAYTR_MERCHANT_SALT'],
+            ],
+            'stripe' => [
+                'class' => StripeGateway::class,
+                'secret_key' => env('STRIPE_SECRET_KEY'),
+                'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+                'env' => ['secret_key' => 'STRIPE_SECRET_KEY', 'webhook_secret' => 'STRIPE_WEBHOOK_SECRET'],
+            ],
+        ],
+
+        /*
+         * iyzico ve PayTR, dijital ürünlerde de alıcı adresi/telefonu/kimlik numarası ister.
+         * Kullanıcıdan bu bilgiler toplanmadığı için sağlayıcının onayladığı değerler girilmelidir
+         * (bkz. docs/MIMARI.md §11).
+         */
+        'buyer_defaults' => [
+            'address' => env('PAYMENT_BUYER_ADDRESS', 'Dijital teslimat - fiziksel gönderim yok'),
+            'city' => env('PAYMENT_BUYER_CITY', 'Istanbul'),
+            'phone' => env('PAYMENT_BUYER_PHONE', '05000000000'),
+            'identity_number' => env('PAYMENT_BUYER_IDENTITY_NUMBER', '11111111111'),
         ],
     ],
 
@@ -161,7 +202,7 @@ return [
         'csp' => in_array(env('SECURITY_CSP'), ['enforce', 'report', 'off'], true) ? env('SECURITY_CSP') : (env('APP_ENV') === 'production' ? 'enforce' : 'report'),
         'csp_extra_sources' => env('CSP_EXTRA_SOURCES', ''),
         'hsts_max_age' => (int) env('HSTS_MAX_AGE', 31536000),
-        'frame_sources' => ['https://www.youtube-nocookie.com', 'https://player.vimeo.com'],
+        'frame_sources' => ['https://www.youtube-nocookie.com', 'https://player.vimeo.com', 'https://www.paytr.com'],
     ],
 
     /*

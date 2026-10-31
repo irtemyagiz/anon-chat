@@ -73,6 +73,8 @@ class AccountDeletionService
                 Storage::disk(config('marketplace.storage.public_media_disk'))->delete($user->avatar_path);
             }
 
+            $user->tokens()->delete();
+
             $anonymous = 'silinmis_'.Str::lower(Str::random(10));
 
             $user->forceFill([

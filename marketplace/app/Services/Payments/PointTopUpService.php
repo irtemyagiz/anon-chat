@@ -279,6 +279,11 @@ class PointTopUpService
 
     private function dispatch(string $providerCode, GatewayEvent $event): WebhookEventStatus
     {
+        /** Bekleyen ödeme, iade bildirimi gibi işlem gerektirmeyen olaylar sipariş aranmadan kaydedilir. */
+        if (! in_array($event->type, [GatewayEvent::PaymentSucceeded, GatewayEvent::PaymentFailed, GatewayEvent::DisputeCreated], true)) {
+            return WebhookEventStatus::Ignored;
+        }
+
         $purchase = PointPurchase::query()
             ->where('uuid', $event->purchaseUuid)
             ->where('provider', $providerCode)
@@ -364,7 +369,7 @@ class PointTopUpService
                 'status' => $status,
                 'amount_minor' => $event->amountMinor,
                 'currency' => $event->currency,
-                'raw_response' => json_decode($event->rawPayload, true),
+                'raw_response' => json_decode($event->rawPayload, true) ?? ['raw' => mb_substr($event->rawPayload, 0, 5000)],
             ],
         ));
     }

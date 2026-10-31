@@ -163,6 +163,23 @@ Windows'ta bulunmadığından bu testler yalnızca Linux/macOS veya CI üzerinde
 DB_CONNECTION=mariadb DB_DATABASE=marketplace_test DB_USERNAME=root php artisan test --group=concurrency
 ```
 
+## Ödeme sağlayıcıları
+
+Sağlayıcılar, anahtarları `.env` dosyasına girilene kadar yönetim panelinden açılamaz.
+Anahtarları girdikten sonra `php artisan config:clear` (üretimde `config:cache`) çalıştırın,
+**Yönetim paneli → Ödemeler** sayfasında sağlayıcıyı açın ve kartta yazan **Bildirim adresini**
+sağlayıcı paneline girin. Bildirim adresleri HTTPS olmalıdır.
+
+| Sağlayıcı | .env | Sağlayıcı panelinde |
+|---|---|---|
+| iyzico | `IYZICO_API_KEY`, `IYZICO_SECRET_KEY`, `IYZICO_BASE_URL` (test: `https://sandbox-api.iyzipay.com`, canlı: `https://api.iyzipay.com`) | İsteğe bağlı mağaza bildirimi (webhook) adresi: `/webhooks/payments/iyzico` |
+| PayTR | `PAYTR_MERCHANT_ID`, `PAYTR_MERCHANT_KEY`, `PAYTR_MERCHANT_SALT`, `PAYTR_TEST_MODE` (canlıda `false`) | Destek & Kurulum → Ayarlar → **Bildirim URL**: `/webhooks/payments/paytr` |
+| Stripe | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Developers → Webhooks → uç nokta `/webhooks/payments/stripe`; olaylar: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.dispute.created` |
+
+iyzico ve PayTR'ye gönderilen alıcı adresi/telefonu için `PAYMENT_BUYER_*` değişkenlerini
+sağlayıcıyla netleştirin (bkz. MIMARI.md §11). Her sağlayıcıyı önce test modunda,
+küçük bir paketle uçtan uca deneyin: ödeme → puanların yüklenmesi → yönetim panelinden iade.
+
 ## B. Apache sanal sunucu (isteğe bağlı)
 
 `C:\xampp\apache\conf\extra\httpd-vhosts.conf` dosyasına ekleyin. Yolu kendi

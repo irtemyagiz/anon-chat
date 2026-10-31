@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PointPurchaseStatus;
 use App\Exceptions\MarketplaceException;
 use App\Models\PaymentProvider;
 use App\Models\PointPackage;
 use App\Models\PointPurchase;
 use App\Services\Currency\CurrencyResolver;
 use App\Services\Currency\PriceFormatter;
+use App\Services\Payments\Gateways\PaytrGateway;
+use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Payments\PointTopUpService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,7 +23,7 @@ use Illuminate\View\View;
  */
 class TopUpController extends Controller
 {
-    public function create(Request $request, CurrencyResolver $currencies, PriceFormatter $prices, PointTopUpService $topUps): View
+    public function create(Request $request, CurrencyResolver $currencies, PriceFormatter $prices, PointTopUpService $topUps, PaymentGatewayManager $gateways): View
     {
         $currency = $currencies->paymentCurrency($request->user());
         $shortfall = max(0, (int) $request->integer('eksik'));
@@ -37,8 +40,7 @@ class TopUpController extends Controller
             'shortfall' => $shortfall,
             'suggested' => $shortfall > 0 ? ($packages->first(fn (array $row) => $row['package']->totalPoints() >= $shortfall)['package'] ?? null) : null,
             'providers' => PaymentProvider::query()->where('is_enabled', true)->orderBy('sort_order')->get()
-                ->filter(fn (PaymentProvider $provider) => $provider->supportsCurrency($currency)
-                    && config("marketplace.payments.gateways.{$provider->code}") !== null),
+                ->filter(fn (PaymentProvider $provider) => $provider->supportsCurrency($currency) && $gateways->isConfigured($provider->code)),
         ]);
     }
 
@@ -57,6 +59,20 @@ class TopUpController extends Controller
         }
 
         return redirect()->away($session->redirectUrl);
+    }
+
+    /**
+     * PayTR ödeme formu site içinde iframe ile açılır (PayTR iFrame API).
+     */
+    public function paytr(Request $request, PointPurchase $purchase): View|RedirectResponse
+    {
+        abort_unless($purchase->user_id === $request->user()->id && $purchase->provider === 'paytr', 404);
+
+        if ($purchase->status !== PointPurchaseStatus::Pending || blank($purchase->provider_reference)) {
+            return redirect()->route('top-up.result', $purchase);
+        }
+
+        return view('wallet.paytr', ['purchase' => $purchase, 'iframeUrl' => PaytrGateway::BASE_URL.'/odeme/guvenli/'.$purchase->provider_reference]);
     }
 
     public function result(Request $request, PointPurchase $purchase): View
