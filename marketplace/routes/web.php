@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Account\AccountController;
+use App\Http\Controllers\Account\NotificationController;
 use App\Http\Controllers\Admin\CatalogSettingsController;
 use App\Http\Controllers\Admin\CommissionController as AdminCommissionController;
 use App\Http\Controllers\Admin\CreatorController as AdminCreatorController;
@@ -99,6 +100,10 @@ Route::middleware('auth')->group(function (): void {
         Route::put('/ayarlar', [AccountController::class, 'update'])->name('settings.update');
         Route::put('/ayarlar/sifre', [AccountController::class, 'updatePassword'])->middleware('throttle:6,1')->name('settings.password');
         Route::get('/koleksiyon-secenekleri/{product}', [AccountController::class, 'collectionOptions'])->name('collection-options');
+        Route::get('/bildirimler', [NotificationController::class, 'index'])->name('notifications');
+        Route::get('/bildirimler/{id}', [NotificationController::class, 'open'])->name('notifications.open');
+        Route::post('/bildirimler/tumunu-oku', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::put('/bildirim-tercihleri', [NotificationController::class, 'preferences'])->name('notifications.preferences');
     });
 
     Route::middleware('throttle:60,1')->group(function (): void {

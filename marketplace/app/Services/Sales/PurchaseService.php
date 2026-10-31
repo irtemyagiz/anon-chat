@@ -18,8 +18,11 @@ use App\Models\ProductLicense;
 use App\Models\PurchaseEntitlement;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Notifications\NewSaleNotification;
+use App\Notifications\PurchaseCompletedNotification;
 use App\Services\Audit\AuditLogger;
 use App\Services\Earnings\CreatorEarningService;
+use App\Services\Notifications\Notifier;
 use App\Services\Points\PointConverter;
 use App\Services\Wallet\WalletService;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +43,7 @@ class PurchaseService
         private readonly CommissionResolver $commissions,
         private readonly CreatorEarningService $earnings,
         private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
     ) {}
 
     /**
@@ -147,6 +151,9 @@ class PurchaseService
 
             $coupon?->increment('redemptions_count');
             $product->increment('sales_count');
+
+            $this->notifier->send($buyer, new PurchaseCompletedNotification($product->title, $product->slug));
+            $this->notifier->send($product->creator, new NewSaleNotification($product->title, $split['creator']));
 
             return $order;
         });

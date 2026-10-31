@@ -8,6 +8,8 @@ use App\Models\Collection;
 use App\Models\CreatorProfile;
 use App\Models\Product;
 use App\Models\User;
+use App\Notifications\NewFollowerNotification;
+use App\Services\Notifications\Notifier;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -18,6 +20,8 @@ use Illuminate\Support\Str;
  */
 class CommunityService
 {
+    public function __construct(private readonly Notifier $notifier) {}
+
     public function toggleFavorite(User $user, Product $product): bool
     {
         return $this->togglePivot('favorites', ['user_id' => $user->id, 'product_id' => $product->id]);
@@ -46,7 +50,13 @@ class CommunityService
             throw new MarketplaceException(__('Bu mağaza takip edilemiyor.'));
         }
 
-        return $this->togglePivot('follows', ['follower_id' => $follower->id, 'creator_id' => $profile->user_id]);
+        $following = $this->togglePivot('follows', ['follower_id' => $follower->id, 'creator_id' => $profile->user_id]);
+
+        if ($following) {
+            $this->notifier->send($profile->user, new NewFollowerNotification($follower->first_name));
+        }
+
+        return $following;
     }
 
     public function createCollection(User $user, string $name, ?string $description, bool $isPublic): Collection

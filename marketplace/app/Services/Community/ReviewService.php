@@ -9,6 +9,11 @@ use App\Models\Product;
 use App\Models\ProductReview;
 use App\Models\PurchaseEntitlement;
 use App\Models\User;
+use App\Notifications\CommentRepliedNotification;
+use App\Notifications\NewCommentNotification;
+use App\Notifications\NewReviewNotification;
+use App\Notifications\ReviewRepliedNotification;
+use App\Services\Notifications\Notifier;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -28,6 +33,8 @@ class ReviewService
     private const MAX_LINKS = 2;
 
     private const AUTO_HIDE_REPORTS = 3;
+
+    public function __construct(private readonly Notifier $notifier) {}
 
     public function review(User $user, Product $product, int $rating, ?string $title, ?string $body): ProductReview
     {
@@ -52,9 +59,14 @@ class ReviewService
             $review->user_id = $user->id;
             $review->fill(['rating' => $rating, 'title' => $title, 'body' => $body]);
             $review->is_verified_purchase = $entitlement->source === EntitlementSource::Purchase;
+            $isNew = ! $review->exists;
             $review->save();
 
             $this->refreshRating($product);
+
+            if ($isNew) {
+                $this->notifier->send($product->creator, new NewReviewNotification($product->title, $rating));
+            }
 
             return $review;
         });
@@ -67,6 +79,7 @@ class ReviewService
         }
 
         $review->forceFill(['creator_reply' => $reply, 'creator_replied_at' => now()])->save();
+        $this->notifier->send($review->user, new ReviewRepliedNotification($review->product->title, $review->product->slug));
     }
 
     public function comment(User $user, Product $product, string $body, ?Comment $parent = null): Comment
@@ -83,6 +96,12 @@ class ReviewService
         $comment->parent_id = $parent?->id;
         $comment->ip_address = request()->ip();
         $comment->save();
+
+        if ($parent !== null && $parent->user_id !== $user->id) {
+            $this->notifier->send($parent->user, new CommentRepliedNotification($product->title, $product->slug));
+        } elseif ($parent === null && $product->creator_id !== $user->id) {
+            $this->notifier->send($product->creator, new NewCommentNotification($product->title, $product->slug));
+        }
 
         return $comment;
     }

@@ -29,6 +29,8 @@ class LayoutComposer
                 ->all()),
             'displayCurrency' => $this->currencies->displayCurrency($user, request()),
             'walletBalance' => $user ? (int) Wallet::query()->where('user_id', $user->id)->value('balance') : null,
+            'recentNotifications' => $user ? $user->notifications()->limit(6)->get() : collect(),
+            'unreadNotifications' => $user ? $user->unreadNotifications()->count() : 0,
             'themePreference' => $user?->theme ?? request()->cookie('theme', 'system'),
         ]);
     }

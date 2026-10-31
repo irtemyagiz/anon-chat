@@ -6,6 +6,7 @@ use App\Enums\FileScanStatus;
 use App\Models\ProductFile;
 use App\Services\Audit\AuditLogger;
 use App\Services\Files\Scanners\FileScanner;
+use App\Services\Notifications\Notifier;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -58,6 +59,7 @@ class ScanProductFile implements ShouldQueue
             ]);
 
             $audit->record('product_file.infected', $this->file, null, ['scan_status' => 'infected'], context: ['detail' => $result->detail]);
+            app(Notifier::class)->staff('products.moderate', __('Zararlı dosya tespit edildi'), __(':title ürününe yüklenen bir dosyada zararlı içerik bulundu ve dosya pasifleştirildi.', ['title' => $this->file->product->title]), route('admin.products.show', $this->file->product));
         }
     }
 

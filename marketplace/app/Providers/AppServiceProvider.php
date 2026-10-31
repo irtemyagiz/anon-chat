@@ -3,16 +3,20 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Notifications\EmailVerifiedNotification;
 use App\Services\Currency\Providers\ExchangeRateProvider;
 use App\Services\Currency\Providers\FrankfurterProvider;
 use App\Services\Files\Scanners\ClamAvScanner;
 use App\Services\Files\Scanners\FileScanner;
 use App\Services\Files\Scanners\NullScanner;
+use App\Services\Notifications\Notifier;
 use App\Services\Payments\PaymentGatewayManager;
 use App\View\Composers\LayoutComposer;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
@@ -51,6 +55,8 @@ class AppServiceProvider extends ServiceProvider
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
 
         View::composer('components.layouts.app', LayoutComposer::class);
+
+        Event::listen(Verified::class, fn (Verified $event) => $event->user instanceof User && app(Notifier::class)->send($event->user, new EmailVerifiedNotification));
 
         /*
          | Yönetici her yetkiye sahiptir. Noktalı yetenekler ("payments.manage") rol

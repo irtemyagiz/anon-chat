@@ -8,7 +8,9 @@ use App\Exceptions\MarketplaceException;
 use App\Models\CreatorProfile;
 use App\Models\CreatorVerification;
 use App\Models\User;
+use App\Notifications\VerificationReviewedNotification;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notifications\Notifier;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -25,7 +27,10 @@ class VerificationService
 
     private const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
+    ) {}
 
     public function latest(CreatorProfile $profile): ?CreatorVerification
     {
@@ -50,6 +55,7 @@ class VerificationService
             $verification->forceFill(['status' => VerificationStatus::Pending])->save();
 
             $this->audit->record('creator.verification_submitted', $verification, actor: $profile->user);
+            $this->notifier->staff('payouts.manage', __('Yeni satıcı doğrulaması'), __(':store kimlik/vergi bilgilerini gönderdi.', ['store' => $profile->store_name]), route('admin.payouts.verifications'));
 
             return $verification;
         });
@@ -69,6 +75,7 @@ class VerificationService
         ])->save();
 
         $this->audit->record('creator.verification_'.$status->value, $verification, ['status' => 'pending'], ['status' => $status->value], $admin, array_filter(['note' => $note]));
+        $this->notifier->send($verification->creatorProfile->user, new VerificationReviewedNotification($status === VerificationStatus::Approved, $note));
     }
 
     /**

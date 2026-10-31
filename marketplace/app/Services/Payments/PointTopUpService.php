@@ -14,9 +14,11 @@ use App\Models\PaymentWebhookEvent;
 use App\Models\PointPackage;
 use App\Models\PointPurchase;
 use App\Models\User;
+use App\Notifications\PointsToppedUpNotification;
 use App\Services\Audit\AuditLogger;
 use App\Services\Currency\CurrencyResolver;
 use App\Services\Currency\ExchangeRateService;
+use App\Services\Notifications\Notifier;
 use App\Services\Points\PointConverter;
 use App\Services\Settings\SettingsService;
 use App\Services\Wallet\WalletService;
@@ -44,6 +46,7 @@ class PointTopUpService
         private readonly PaymentGatewayManager $gateways,
         private readonly SettingsService $settings,
         private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
     ) {}
 
     public function minimumTopUpPoints(): int
@@ -134,6 +137,7 @@ class PointTopUpService
                 'provider' => $providerCode,
                 'ip' => $request->ip(),
             ]);
+            $this->notifier->staff('payments.manage', __('Şüpheli ödeme bildirimi'), __(':provider için imzası geçersiz bir webhook alındı (IP: :ip).', ['provider' => $providerCode, 'ip' => $request->ip()]), route('admin.payments.webhooks'));
 
             throw $exception;
         }
@@ -195,6 +199,7 @@ class PointTopUpService
                 ]);
 
                 $purchase->forceFill(['failure_reason' => 'amount_mismatch'])->save();
+                $this->notifier->staff('payments.manage', __('Şüpheli ödeme'), __('Ödeme tutarı veya para birimi siparişle eşleşmedi; puan yüklenmedi. İşlem: :uuid', ['uuid' => $purchase->uuid]), route('admin.payments.index', ['q' => $purchase->uuid]));
 
                 return WebhookEventStatus::Failed;
             }
@@ -218,6 +223,8 @@ class PointTopUpService
                 'wallet_transaction_id' => $transaction->id,
                 'failure_reason' => null,
             ])->save();
+
+            $this->notifier->send($purchase->user, new PointsToppedUpNotification($purchase->points));
 
             return WebhookEventStatus::Processed;
         });
@@ -342,6 +349,7 @@ class PointTopUpService
             $purchase->forceFill(['status' => PointPurchaseStatus::Disputed])->save();
 
             $this->audit->record('payment.disputed', $purchase, null, null, null, ['event' => $event->eventId]);
+            $this->notifier->staff('payments.manage', __('Ödeme itirazı (chargeback)'), __(':email kullanıcısının :points puanlık yüklemesine itiraz edildi; puanlar geri alındı.', ['email' => $purchase->user->email, 'points' => $purchase->points]), route('admin.payments.index', ['durum' => 'disputed']));
 
             return WebhookEventStatus::Processed;
         });

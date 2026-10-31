@@ -13,9 +13,13 @@ use App\Models\ProductFile;
 use App\Models\ProductImage;
 use App\Models\Tag;
 use App\Models\User;
+use App\Notifications\CreatorPublishedNotification;
+use App\Notifications\ProductReviewedNotification;
+use App\Notifications\ProductUpdatedNotification;
 use App\Services\Audit\AuditLogger;
 use App\Services\Files\ImageProcessor;
 use App\Services\Files\UploadInspector;
+use App\Services\Notifications\Notifier;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -34,6 +38,7 @@ class ProductManager
         private readonly UploadInspector $inspector,
         private readonly ImageProcessor $images,
         private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
     ) {}
 
     /**
@@ -200,6 +205,7 @@ class ProductManager
 
         if (config('marketplace.products.require_review')) {
             $product->forceFill(['status' => ProductStatus::PendingReview, 'moderation_note' => null])->save();
+            $this->notifier->staff('products.moderate', __('İnceleme bekleyen ürün'), __(':title incelemeye gönderildi.', ['title' => $product->title]), route('admin.products.show', $product));
         } else {
             $this->publish($product);
         }
@@ -224,6 +230,7 @@ class ProductManager
 
         $this->publish($product);
         $this->audit->record('product.approved', $product, ['status' => 'pending_review'], ['status' => 'published'], $admin);
+        $this->notifier->send($product->creator, new ProductReviewedNotification($product->title, $product->uuid, true));
     }
 
     public function reject(Product $product, User $admin, string $note): void
@@ -234,6 +241,7 @@ class ProductManager
 
         $product->forceFill(['status' => ProductStatus::Rejected, 'moderation_note' => $note])->save();
         $this->audit->record('product.rejected', $product, ['status' => 'pending_review'], ['status' => 'rejected'], $admin, ['note' => $note]);
+        $this->notifier->send($product->creator, new ProductReviewedNotification($product->title, $product->uuid, false, $note));
     }
 
     /**
@@ -262,15 +270,28 @@ class ProductManager
         return $missing;
     }
 
+    /**
+     * Ürünü yayınlar. İlk yayında takipçilere, yeni sürümde satın alanlara bildirim gider.
+     */
     private function publish(Product $product): void
     {
+        $firstPublication = $product->published_at === null;
+
         $product->forceFill([
             'status' => ProductStatus::Published,
             'published_at' => $product->published_at ?? now(),
             'moderation_note' => null,
         ])->save();
 
-        $product->versions()->firstOrCreate(['version' => $product->current_version], ['released_at' => now()]);
+        $version = $product->versions()->firstOrCreate(['version' => $product->current_version], ['released_at' => now()]);
+
+        if ($firstPublication) {
+            $followers = User::query()->whereIn('id', DB::table('follows')->where('creator_id', $product->creator_id)->select('follower_id'))->get();
+            $this->notifier->send($followers, new CreatorPublishedNotification($product->creator->creatorProfile?->store_name ?? $product->creator->username, $product->title, $product->slug));
+        } elseif ($version->wasRecentlyCreated) {
+            $owners = User::query()->whereIn('id', DB::table('purchase_entitlements')->where('product_id', $product->id)->whereNull('revoked_at')->select('user_id'))->get();
+            $this->notifier->send($owners, new ProductUpdatedNotification($product->title, $product->slug, $version->version));
+        }
     }
 
     private function refreshCover(Product $product): void

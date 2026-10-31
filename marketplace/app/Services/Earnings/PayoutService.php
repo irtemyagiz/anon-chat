@@ -9,7 +9,10 @@ use App\Models\CreatorEarning;
 use App\Models\CreatorPayout;
 use App\Models\CreatorPayoutRequest;
 use App\Models\User;
+use App\Notifications\PayoutStatusNotification;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notifications\Notifier;
+use App\Services\Points\PointConverter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -25,6 +28,7 @@ class PayoutService
     public function __construct(
         private readonly CreatorEarningService $earnings,
         private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
     ) {}
 
     /**
@@ -51,6 +55,8 @@ class PayoutService
 
             $balance->reserved_cents += $amountCents;
             $balance->save();
+
+            $this->notifier->staff('payouts.manage', __('Yeni hakediş talebi'), __(':store $:amount talep etti.', ['store' => $creator->creatorProfile->store_name, 'amount' => PointConverter::formatCents($amountCents)]), route('admin.payouts.index'));
 
             return CreatorPayoutRequest::forceCreate([
                 'uuid' => (string) Str::uuid(),
@@ -170,6 +176,7 @@ class PayoutService
                 'amount_cents' => $request->amount_cents,
                 'note' => $note,
             ]));
+            $this->notifier->send($request->creator, new PayoutStatusNotification($to->value, $request->amount_cents, $note));
 
             return $request;
         });

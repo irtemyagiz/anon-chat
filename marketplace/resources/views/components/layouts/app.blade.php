@@ -53,6 +53,35 @@
                 </a>
             @endauth
 
+            @auth
+                <div x-data="{ open: false }" class="relative" @keydown.escape.window="open = false">
+                    <button type="button" @click="open = ! open" class="btn-ghost relative size-10 rounded-full p-0" aria-label="{{ __('Bildirimler') }}" :aria-expanded="open">
+                        <x-icon name="mail" class="size-5"/>
+                        @if ($unreadNotifications > 0)
+                            <span class="absolute top-1.5 right-1.5 flex min-w-4 items-center justify-center rounded-full bg-filament-500 px-1 text-[0.6rem] font-bold text-katman-950">{{ $unreadNotifications > 9 ? '9+' : $unreadNotifications }}</span>
+                        @endif
+                    </button>
+                    <div x-cloak x-show="open" x-transition.origin.top.right @click.outside="open = false" class="card absolute right-0 z-50 mt-2 w-80 max-w-[90vw] p-2">
+                        <div class="flex items-center justify-between px-3 py-2">
+                            <p class="text-sm font-bold">{{ __('Bildirimler') }}</p>
+                            @if ($unreadNotifications > 0)
+                                <form method="POST" action="{{ route('account.notifications.read-all') }}">@csrf<button class="text-xs text-katman-700 hover:underline dark:text-katman-300">{{ __('Tümünü okundu yap') }}</button></form>
+                            @endif
+                        </div>
+                        @forelse ($recentNotifications as $notification)
+                            <a href="{{ route('account.notifications.open', $notification->id) }}" @class(['block rounded-lg px-3 py-2 hover:bg-surface-2', 'bg-katman-50/60 dark:bg-katman-950/60' => $notification->read_at === null])>
+                                <span class="block text-sm font-medium">{{ $notification->data['title'] ?? '' }}</span>
+                                <span class="line-clamp-2 block text-xs text-muted">{{ $notification->data['body'] ?? '' }}</span>
+                                <span class="mt-0.5 block text-[0.65rem] text-subtle">{{ $notification->created_at->diffForHumans() }}</span>
+                            </a>
+                        @empty
+                            <p class="px-3 py-4 text-center text-sm text-muted">{{ __('Henüz bildirim yok.') }}</p>
+                        @endforelse
+                        <a href="{{ route('account.notifications') }}" class="mt-1 block rounded-lg px-3 py-2 text-center text-xs font-semibold text-katman-700 hover:bg-surface-2 dark:text-katman-300">{{ __('Tüm bildirimler') }}</a>
+                    </div>
+                </div>
+            @endauth
+
             <button type="button" @click="$store.theme.toggle()" class="btn-ghost size-10 rounded-full p-0" aria-label="{{ __('Temayı değiştir') }}">
                 <x-icon name="moon" class="size-5 dark:hidden"/>
                 <x-icon name="sun" class="hidden size-5 dark:block"/>

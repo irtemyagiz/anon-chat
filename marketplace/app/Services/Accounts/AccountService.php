@@ -8,7 +8,10 @@ use App\Exceptions\MarketplaceException;
 use App\Models\CreatorProfile;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\CreatorReviewedNotification;
+use App\Notifications\WelcomeNotification;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notifications\Notifier;
 use App\Services\Wallet\WalletService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +29,7 @@ class AccountService
     public function __construct(
         private readonly WalletService $wallets,
         private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
     ) {}
 
     /**
@@ -51,6 +55,7 @@ class AccountService
         });
 
         event(new Registered($user));
+        $this->notifier->send($user, new WelcomeNotification);
 
         return $user;
     }
@@ -77,6 +82,7 @@ class AccountService
             $user->unsetRelation('roles');
 
             $this->audit->record('creator.applied', $profile, null, ['store' => $profile->store_slug], $user);
+            $this->notifier->staff('creators.manage', __('Yeni creator başvurusu'), __(':store (:email) mağaza açmak için başvurdu.', ['store' => $profile->store_name, 'email' => $user->email]), route('admin.creators.index'));
 
             return $profile;
         });
@@ -98,6 +104,7 @@ class AccountService
         ])->save();
 
         $this->audit->record('creator.'.$status->value, $profile, ['status' => $old->value], ['status' => $status->value], $admin, array_filter(['reason' => $reason]));
+        $this->notifier->send($profile->user, new CreatorReviewedNotification($status->value, $reason));
     }
 
     /**

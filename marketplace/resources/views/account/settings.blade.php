@@ -52,4 +52,22 @@
         </div>
         <button class="btn-secondary">{{ __('Şifreyi güncelle') }}</button>
     </form>
+
+    <form method="POST" action="{{ route('account.notifications.preferences') }}" class="card mt-6 space-y-4 p-6">
+        @csrf @method('PUT')
+        <div>
+            <h2 class="font-bold">{{ __('E-posta bildirimleri') }}</h2>
+            <p class="text-sm text-muted">{{ __('Tüm bildirimler site içinde görünür. Hangilerinin e-posta ile de gönderileceğini seç.') }}</p>
+        </div>
+        @foreach (\App\Notifications\MarketplaceNotification::CATEGORIES as $category => $definition)
+            @continue($category === 'admin' && ! $user->can('admin.access'))
+            @continue($category === 'sales' || $category === 'payouts' ? $user->creatorProfile === null : false)
+            <label class="flex items-center gap-3 text-sm">
+                <input type="checkbox" name="mail[]" value="{{ $category }}" @checked(\App\Notifications\MarketplaceNotification::wantsMail($user, $category)) class="accent-katman-600">
+                {{ __($definition['label']) }}
+            </label>
+        @endforeach
+        <p class="text-xs text-subtle">{{ __('Hesap güvenliği e-postaları (doğrulama, şifre sıfırlama) her zaman gönderilir.') }}</p>
+        <button class="btn-secondary">{{ __('Tercihleri kaydet') }}</button>
+    </form>
 </x-layouts.account>

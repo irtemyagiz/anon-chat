@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductReport;
 use App\Models\ProductReview;
 use App\Services\Community\ReviewService;
+use App\Services\Notifications\Notifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -101,6 +102,8 @@ class ReviewController extends Controller
         $report->reporter_id = $request->user()?->id;
         $report->reporter_email ??= $request->user()?->email;
         $report->save();
+
+        app(Notifier::class)->staff('products.moderate', __('Yeni içerik şikâyeti'), __(':title için “:reason” bildirimi yapıldı.', ['title' => $product->title, 'reason' => __(ProductReport::REASONS[$report->reason])]), route('admin.moderation.reports'));
 
         return back()->with('status', __('Bildiriminiz alındı. Ekibimiz inceleyecek.'));
     }

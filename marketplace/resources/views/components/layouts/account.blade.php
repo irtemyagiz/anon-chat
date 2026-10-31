@@ -6,6 +6,7 @@
         ['account.collections', 'layers', __('Koleksiyonlarım')],
         ['account.following', 'store', __('Takip ettiklerim')],
         ['wallet', 'wallet', __('Cüzdanım')],
+        ['account.notifications', 'mail', __('Bildirimler')],
         ['account.settings', 'user', __('Profil ve ayarlar')],
     ];
 @endphp
